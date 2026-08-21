@@ -1,6 +1,6 @@
 # Documento de Visão — SimulaAI
 
-**Equipe:** [Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (28040482421006) — nome (RA) — nome (RA)]  
+**Equipe:** [Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (28040482421006) — vinicius brasileiro veras (2840482421021) — nome (RA)]  
 **Trilha:** B(Cliente Real)  
 **Origem do problema:**  Dificuldade de estudante em passar em provas
 **Data:** 21/08/2026
