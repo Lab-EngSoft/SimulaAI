@@ -1,6 +1,6 @@
 # Termo de Aceite do Projeto — SimulaAI
 
-**Equipe:** Gabriel Reis de Souza (2840482421005) , vinicius brasileiro veras (2840482421021)
+**Equipe:** Gabriel Reis de Souza (2840482421005) , vinicius brasileiro veras (2840482421021), Cesar Augusto Saraiva Fifolato (2840482421022), Davi Sousa Cirilo (2840482421006)
 **Trilha:** B (Tema Livre)
 **Data:** 28/08/2026
 
