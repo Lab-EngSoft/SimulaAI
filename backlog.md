@@ -1,6 +1,6 @@
 # Backlog Priorizado — SimulaAI
 
-Integrantes: Gabriel Reis de Souza(2840482421005) - Cesar Augusto Saraiva Fifolato (2840482421022)
+Integrantes: Gabriel Reis de Souza(2840482421005) - Cesar Augusto Saraiva Fifolato (2840482421022) Davi Sousa Cirilo (2840482421006)
 
 | # | História | Critérios de aceite | Prioridade (MoSCoW) | Estimativa | Sprint alvo |
 | --- | --- | --- | --- | --- | --- |
