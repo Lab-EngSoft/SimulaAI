@@ -15,4 +15,11 @@ Integrantes: Gabriel Reis de Souza(2840482421005) Cesar Augusto Saraiva Fifolato
 | 9 | Como aluno, quero visualizar um dashboard com meu desempenho, para que eu identifique meus pontos fortes e dificuldades. | - Exibe total de simulados realizados - Exibe quantidade de acertos e erros - Exibe percentual ou média de aproveitamento - Exibe desempenho por matéria - Exibe desempenho por assunto | Must | 8 | Sprint 3 |
 | 10 | Como aluno, quero acompanhar minha evolução entre diferentes tentativas, para que eu saiba se meu desempenho está melhorando. | - Utiliza os dados armazenados no histórico de tentativas - Permite comparar o desempenho entre diferentes simulados realizados - A evolução apresentada deve ser baseada nos resultados registrados pelo próprio sistema | Must | 5 | Sprint 4 |
 | 11 | Como usuário, quero acessar o SimulaAI por uma aplicação web responsiva e publicada, para que eu possa utilizar o sistema por meio de uma URL. | - A aplicação deve ser disponibilizada publicamente por URL - O MVP deve funcionar como aplicação web responsiva - O código-fonte deve permanecer versionado em Git - O repositório deve possuir README com instruções de execução, tecnologias utilizadas e informações da equipe | Must | 3 | Sprint 4 |
-| 12 | Como equipe, queremos manter funcionalidades não essenciais fora do MVP, para que o semestre permaneça focado na proposta principal. | - Não inclui aplicativo mobile nativo - Não inclui geração automática de questões por IA - Não inclui correção de questões discursivas - Não inclui pagamentos, assinaturas ou planos - Não inclui ranking competitivo ou gamificação avançada - Não inclui treinamento de modelo próprio de IA | Won’t | - | - |
+
+Fora de escopo
+  -Aplicativo mobile nativo
+  -Geração automática de questões por IA
+  -Correção de questões discursivas
+  -Pagamentos, assinaturas ou planos
+  -Ranking competitivo ou gamificação avançada
+  -Treinamento de modelo próprio de IA
