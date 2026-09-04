@@ -32,7 +32,7 @@
 | Camada         |           Tecnologia           |         
 | -------------- | ------------------------------ |
 | Frontend       | React + TypeScript             |
-| Backend        | Python                         |
+| Backend        | Python + FastAPI                       |
 | Banco de dados | PostgreSQL (Supabase)          |
 | Deploy         | Vercel + Render                |
 
@@ -40,8 +40,8 @@
 
 | Integrante                     | Papel     |
 | ------------------------------ | -------------- |
-| Gabriel Reis de Souza          | Backend        |
-| Davi Sousa Cirilo              | Banco de dados |
+| Gabriel Reis de Souza          | Backend / Product Owner       |
+| Davi Sousa Cirilo              | Banco de dados / Scrum Master |
 | Vinicius Brasileiro Veras      | backend        |
 | Cesar Augusto Saraiva Fifolato | Front-End      |
 
