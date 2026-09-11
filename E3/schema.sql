@@ -22,7 +22,7 @@ CREATE TABLE usuario (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
-    senha VARCHAR(255) NOT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
     perfil VARCHAR(50) NOT NULL CHECK (perfil IN ('ALUNO', 'ADMINISTRADOR')),
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -94,6 +94,7 @@ CREATE TABLE simulado (
 CREATE TABLE simulado_questao (
     simulado_id INT NOT NULL,
     questao_id INT NOT NULL,
+    ordem INT NOT NULL CHECK (ordem > 0),
     PRIMARY KEY (simulado_id, questao_id),
     CONSTRAINT fk_sq_simulado FOREIGN KEY (simulado_id) 
         REFERENCES simulado(id) ON DELETE CASCADE,
@@ -139,6 +140,59 @@ CREATE TABLE resposta (
     CONSTRAINT fk_resposta_alternativa FOREIGN KEY (alternativa_id) 
         REFERENCES alternativa(id) ON DELETE CASCADE
 );
+
+-- =====================================================================
+-- SEED DE DADOS DE EXEMPLO
+-- Pode ser executado após a criação das tabelas em um banco de desenvolvimento.
+-- As senhas abaixo são valores fictícios apenas para demonstração local.
+-- =====================================================================
+
+INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES
+    ('Ana Souza', 'ana.aluno@simulaai.local', 'hash-demo-aluno', 'ALUNO'),
+    ('Carlos Oliveira', 'carlos.admin@simulaai.local', 'hash-demo-admin', 'ADMINISTRADOR');
+
+INSERT INTO materia (nome, descricao) VALUES
+    ('Matemática', 'Conteúdos de matemática para treinamento.'),
+    ('Língua Portuguesa', 'Conteúdos de interpretação e gramática.');
+
+INSERT INTO assunto (materia_id, nome, descricao) VALUES
+    ((SELECT id FROM materia WHERE nome = 'Matemática'), 'Porcentagem', 'Cálculos percentuais.'),
+    ((SELECT id FROM materia WHERE nome = 'Língua Portuguesa'), 'Interpretação de texto', 'Compreensão de textos.');
+
+INSERT INTO questao (assunto_id, enunciado, nivel_dificuldade) VALUES
+    ((SELECT id FROM assunto WHERE nome = 'Porcentagem'), 'Uma turma tem 40 alunos. Se 25% faltaram, quantos alunos compareceram?', 'Fácil'),
+    ((SELECT id FROM assunto WHERE nome = 'Interpretação de texto'), 'Ao identificar a ideia principal de um texto, o leitor deve observar principalmente:', 'Médio');
+
+INSERT INTO alternativa (questao_id, texto, correta) VALUES
+    ((SELECT id FROM questao WHERE enunciado LIKE 'Uma turma tem 40 alunos%'), '10 alunos', FALSE),
+    ((SELECT id FROM questao WHERE enunciado LIKE 'Uma turma tem 40 alunos%'), '30 alunos', TRUE),
+    ((SELECT id FROM questao WHERE enunciado LIKE 'Uma turma tem 40 alunos%'), '35 alunos', FALSE),
+    ((SELECT id FROM questao WHERE enunciado LIKE 'Ao identificar a ideia principal%'), 'A informação central desenvolvida pelo texto', TRUE),
+    ((SELECT id FROM questao WHERE enunciado LIKE 'Ao identificar a ideia principal%'), 'A maior palavra do texto', FALSE),
+    ((SELECT id FROM questao WHERE enunciado LIKE 'Ao identificar a ideia principal%'), 'A opinião de um leitor externo', FALSE);
+
+INSERT INTO simulado (titulo, descricao) VALUES
+    ('Simulado demonstrativo', 'Simulado inicial para validar o fluxo do aluno.');
+
+INSERT INTO simulado_questao (simulado_id, questao_id, ordem) VALUES
+    ((SELECT id FROM simulado WHERE titulo = 'Simulado demonstrativo'),
+     (SELECT id FROM questao WHERE enunciado LIKE 'Uma turma tem 40 alunos%'), 1),
+    ((SELECT id FROM simulado WHERE titulo = 'Simulado demonstrativo'),
+     (SELECT id FROM questao WHERE enunciado LIKE 'Ao identificar a ideia principal%'), 2);
+
+INSERT INTO tentativa (usuario_id, simulado_id, data_fim, acertos, erros, percentual_aproveitamento, status) VALUES
+    ((SELECT id FROM usuario WHERE email = 'ana.aluno@simulaai.local'),
+     (SELECT id FROM simulado WHERE titulo = 'Simulado demonstrativo'),
+     CURRENT_TIMESTAMP, 1, 1, 50.00, 'FINALIZADO');
+
+INSERT INTO resposta (tentativa_id, questao_id, alternativa_id, correta, explicacao_ia) VALUES
+    ((SELECT id FROM tentativa WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'ana.aluno@simulaai.local')),
+     (SELECT id FROM questao WHERE enunciado LIKE 'Uma turma tem 40 alunos%'),
+     (SELECT id FROM alternativa WHERE texto = '30 alunos'), TRUE, NULL),
+    ((SELECT id FROM tentativa WHERE usuario_id = (SELECT id FROM usuario WHERE email = 'ana.aluno@simulaai.local')),
+     (SELECT id FROM questao WHERE enunciado LIKE 'Ao identificar a ideia principal%'),
+     (SELECT id FROM alternativa WHERE texto = 'A maior palavra do texto'), FALSE,
+     'A ideia principal é a informação central desenvolvida pelo texto, não uma característica isolada de uma palavra.');
 
 -- =====================================================================
 -- FIM DO SCRIPT DDL

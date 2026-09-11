@@ -24,7 +24,7 @@ flowchart LR
   Aluno --> UC9[Visualizar dashboard de desempenho]
   Aluno --> UC10[Acompanhar evolução do desempenho]
 
-  UC7 -. ocorre em respostas incorretas .-> UC6
+  UC7 -.->|<<extend>>| UC6
 ```
 
 ## 2. Diagrama de Classes

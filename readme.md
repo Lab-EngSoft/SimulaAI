@@ -72,7 +72,7 @@ O SimulaAI será uma plataforma web de simulados para estudantes que se preparam
 
    No Supabase, use o SQL Editor para executar o conteúdo de [E3/schema.sql](E3/schema.sql).
 
-5. Rode migrations e seed quando forem adicionadas ao backend. No estado atual, não há migrations nem dados iniciais versionados.
+5. O arquivo `E3\schema.sql` já contém o seed de dados demonstrativos e deve ser executado uma única vez em um banco vazio. Migrations específicas do backend ainda serão adicionadas durante a implementação.
 
 6. Suba os serviços durante a implementação:
 
