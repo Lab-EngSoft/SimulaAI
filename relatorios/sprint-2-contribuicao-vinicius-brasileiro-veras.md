@@ -17,7 +17,7 @@
 
 - [ ] Dailies/weeklies — não houve dailies ou weeklies formais na Sprint 2; a comunicação da equipe foi realizada por WhatsApp.
 - [ ] Sprint Review — não houve Sprint Review formal; a entrega conjunta das Sprints 1 e 2 foi autorizada pelo professor.
-- [ ] Retrospectiva — a ata de retrospectiva da Sprint 2 foi elaborada a partir do balanço da equipe e registrada no repositório (`docs/sprints/sprint-2-retrospectiva.md`).
+- [ ] Retrospectiva — a ata de retrospectiva da Sprint 2 foi elaborada a partir do balanço da equipe e registrada no repositório (`relatorios/sprint-2-retrospectiva.md`).
 
 ## 3. PRs de colegas que revisei
 

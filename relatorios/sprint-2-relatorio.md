@@ -31,12 +31,12 @@ Fluxo completo do simulado na API: **iniciar → responder → finalizar com cor
 
 ## 4. Evidências de teste
 
-CT05–CT08 do plano de testes (`docs/plano-de-testes.md`) implementados como testes automatizados pytest — **12 testes novos; suíte total: 31 testes, 100% aprovados** na execução local de 02/10/2026; detalhe em `docs/sprints/sprint-2-evidencias-teste.md`.
+CT05–CT08 do plano de testes (`docs/plano-de-testes.md`) implementados como testes automatizados pytest — **12 testes novos; suíte total: 31 testes, 100% aprovados** na execução local de 02/10/2026; detalhe em `relatorios/sprint-2-evidencias-teste.md`.
 
 ## 5. Retrospectiva e contribuição individual
 
-- Ata de retrospectiva: `docs/sprints/sprint-2-retrospectiva.md`
-- Relatórios individuais: `docs/sprints/sprint-2-contribuicao-{gabriel,davi,vinicius,cesar}.md`
+- Ata de retrospectiva: `relatorios/sprint-2-retrospectiva.md`
+- Relatórios individuais: `relatorios/sprint-2-contribuicao-{gabriel,davi,vinicius,cesar}.md`
 
 ## 6. Riscos/impedimentos para a próxima sprint
 

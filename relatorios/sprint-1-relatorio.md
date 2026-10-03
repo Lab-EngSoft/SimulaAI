@@ -30,12 +30,12 @@ API REST do SimulaAI (FastAPI) com as três histórias Must da Sprint 1 funciona
 
 ## 4. Evidências de teste
 
-Casos CT01–CT04 do plano de testes (`docs/plano-de-testes.md`) implementados como testes automatizados pytest — **19 testes, 100% aprovados** na execução local de 02/10/2026; detalhe em `docs/sprints/sprint-1-evidencias-teste.md`.
+Casos CT01–CT04 do plano de testes (`docs/plano-de-testes.md`) implementados como testes automatizados pytest — **19 testes, 100% aprovados** na execução local de 02/10/2026; detalhe em `relatorios/sprint-1-evidencias-teste.md`.
 
 ## 5. Retrospectiva e contribuição individual
 
-- Ata de retrospectiva: `docs/sprints/sprint-1-retrospectiva.md`
-- Relatórios individuais: `docs/sprints/sprint-1-contribuicao-{gabriel,davi,vinicius,cesar}.md`
+- Ata de retrospectiva: `relatorios/sprint-1-retrospectiva.md`
+- Relatórios individuais: `relatorios/sprint-1-contribuicao-{gabriel,davi,vinicius,cesar}.md`
 
 ## 6. Riscos/impedimentos para a próxima sprint
 
