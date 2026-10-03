@@ -22,7 +22,7 @@
 
 ## 3. O que não funcionou
 
-- A sprint passou por atraso de agenda (prazo estendido pelo professor); a integração frontend↔backend não começou.
+- A entrega conjunta das Sprints 1 e 2 (autorizada pelo professor) concentrou o esforço em backend e documentação; a integração frontend↔backend não começou nesta sprint.
 - O frontend (branch do Cesar) ainda não foi commitado com PR nem integrado à API.
 - Ainda não há CI (GitHub Actions) nem conexão com o Supabase.
 

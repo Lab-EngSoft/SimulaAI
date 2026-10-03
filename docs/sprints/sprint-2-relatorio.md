@@ -1,6 +1,6 @@
 # Relatório de Entrega — Sprint 2 — SimulaAI
 
-**Período:** 19/09/2026 a 02/10/2026 (entrega documentada em 02/10/2026, com prazo estendido pelo professor)
+**Período:** 19/09/2026 a 02/10/2026 (Sprint 2 entregue junto com a Sprint 1, conforme autorização do professor)
 **Sprint Review:** 02/10/2026 — [confirmar com o grupo]
 
 ## 1. Planejado vs. entregue
