@@ -1,29 +1,26 @@
 # SimulaAI
 
-O SimulaAI será uma plataforma web de simulados para estudantes que se preparam para vestibulares, concursos, provas acadêmicas ou certificações. O sistema organiza questões por matéria e assunto, corrige tentativas, mostra o desempenho e gera explicações por IA para respostas incorretas.
+O SimulaAI é uma plataforma web de simulados para estudantes que se preparam para vestibulares, concursos, provas acadêmicas ou certificações. O sistema organiza questões por matéria e assunto, corrige tentativas, mostra o desempenho e gera explicações por IA para respostas incorretas.
 
-**Deploy:** ainda não publicado — previsto para as sprints de implementação
+**Deploy:** ainda não publicado — previsto para a Sprint 4 (história #11)
 **Repositório:** https://github.com/Lab-EngSoft/SimulaAI
-**Equipe:** Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (2840482421006) — Vinicius Brasileiro Veras (2840482421021) — Cesar Augusto Saraiva Fifolato (2840482421022) · Laboratório de Engenharia de Software · ADS Fatec Ribeirão Preto
+**Equipe:** Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (2840482421006) — Vinicius Brasileiro Veras (2840482421021) — Cesar Augusto Saraifa Fifolato (2840482421022) · Laboratório de Engenharia de Software · ADS Fatec Ribeirão Preto
 
-> **Estado da entrega E4:** este repositório contém a documentação e o schema de dados das entregas E1–E3. A aplicação ainda não possui código de frontend/backend executável; os comandos abaixo descrevem a configuração definida para a implementação.
+> **Estado atual (entregas E5–E6):** o backend FastAPI das Sprints 1 e 2 está implementado e testado (31 testes pytest, 100% aprovados): autenticação com perfis Aluno/Administrador, CRUD de matérias, assuntos e questões, e o fluxo completo do simulado (iniciar → responder → finalizar com correção automática). O frontend React está pronto na branch `feature/frontend-sprint-1` (dados em memória) e aguarda integração com a API na Sprint 3.
 
 ## Stack
 
 - Frontend: React + TypeScript
-- Backend: Python 3.12+ + FastAPI
-- Banco de dados: PostgreSQL 15+ (Supabase)
+- Backend: Python 3.12+ + FastAPI + SQLAlchemy (implementado)
+- Banco de dados: PostgreSQL 15+ (Supabase) em produção; SQLite para desenvolvimento e testes
 - Deploy planejado: Vercel (frontend) + Render (backend)
 
-## Como rodar localmente
+## Como rodar o backend localmente
 
 ### Pré-requisitos
 
-- Git 2.40 ou superior
-- Node.js 20 ou superior e npm 10 ou superior
 - Python 3.12 ou superior
-- PostgreSQL 15 ou superior, ou uma conta/projeto no Supabase
-- Acesso à internet para instalar dependências e, quando implementada, consultar a API de IA
+- Git 2.40 ou superior
 
 ### Passo a passo
 
@@ -34,64 +31,70 @@ O SimulaAI será uma plataforma web de simulados para estudantes que se preparam
    Set-Location SimulaAI
    ```
 
-2. Instale as dependências quando as pastas de aplicação forem adicionadas:
+2. Crie um ambiente virtual e instale as dependências do backend:
 
    ```powershell
-   npm install                 # frontend, quando houver package.json
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   pip install -r backend\requirements.txt
+   python -m pip install -r backend\requirements.txt
    ```
+
+   *(Se `python -m venv` falhar ao instalar o pip, crie com `python -m venv --without-pip .venv` e instale com `python -m pip install --user -r backend\requirements.txt`.)*
 
 3. Configure as variáveis de ambiente. Copie `.env.example` para `.env` e preencha os valores locais. Nunca versione o arquivo `.env`:
 
    | Variável | Obrigatória | Descrição |
    |---|---:|---|
-   | `DATABASE_URL` | Sim | URL de conexão do PostgreSQL/Supabase |
-   | `SECRET_KEY` | Sim | Chave usada para assinar sessões ou tokens; gere uma chave forte |
-   | `AI_API_KEY` | Sim para explicações por IA | Chave da API de IA usada pelo backend |
+   | `DATABASE_URL` | Sim | URL de conexão; padrão local: `sqlite:///./simulaai.db` |
+   | `SECRET_KEY` | Sim | Chave usada para assinar os tokens JWT; gere uma chave forte (mínimo 32 caracteres) |
    | `CORS_ORIGINS` | Sim | Origens permitidas, por exemplo `http://localhost:5173` |
-   | `VITE_API_URL` | Sim para o frontend | URL da API, por exemplo `http://localhost:8000` |
+   | `TOKEN_EXPIRA_MINUTOS` | Não | Validade do token em minutos (padrão: 480 = 8h) |
+   | `AI_API_KEY` | Sprint 3 | Chave da API de IA usada pelo backend (explicações) |
+   | `VITE_API_URL` | Sprint 3 | URL da API para o frontend, por exemplo `http://localhost:8000` |
 
-   O arquivo `.env.example` deverá conter somente nomes de variáveis e valores fictícios, por exemplo:
-
-   ```dotenv
-   DATABASE_URL=postgresql://usuario:senha@localhost:5432/simulaai
-   SECRET_KEY=chave-local-apenas-para-desenvolvimento
-   AI_API_KEY=preencher-localmente
-   CORS_ORIGINS=http://localhost:5173
-   VITE_API_URL=http://localhost:8000
-   ```
-
-4. Crie o banco `simulaai` e aplique o schema:
+4. Suba o servidor:
 
    ```powershell
-   createdb simulaai
-   psql -d simulaai -f E3\schema.sql
+   Set-Location backend
+   .\..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
    ```
 
-   No Supabase, use o SQL Editor para executar o conteúdo de [E3/schema.sql](E3/schema.sql).
+5. Acesse:
+   - API: `http://localhost:8000`
+   - Documentação interativa (Swagger): `http://localhost:8000/docs`
 
-5. O arquivo `E3\schema.sql` já contém o seed de dados demonstrativos e deve ser executado uma única vez em um banco vazio. Migrations específicas do backend ainda serão adicionadas durante a implementação.
+6. O seed cria automaticamente, na primeira execução, os usuários de demonstração e o conteúdo do `E3/schema.sql`:
 
-6. Suba os serviços durante a implementação:
+   | Perfil | E-mail | Senha |
+   |---|---|---|
+   | ADMINISTRADOR | `carlos.admin@simulaai.app` | `admin123` |
+   | ALUNO | `ana.aluno@simulaai.app` | `aluno123` |
 
-   ```powershell
-   # backend
-   uvicorn app.main:app --reload --port 8000
+7. Para usar o PostgreSQL/Supabase em produção, aponte `DATABASE_URL` para a URL do Supabase e execute o conteúdo de `E3/schema.sql` no SQL Editor do projeto.
 
-   # frontend, em outro terminal
-   npm run dev
-   ```
+## Como rodar o frontend localmente
 
-7. Acesse o frontend em `http://localhost:5173`. A documentação da API ficará disponível em `http://localhost:8000/docs` quando o backend for implementado.
+A pasta `frontend/` completa (com `package.json`, `index.html`, `main.tsx` e configurações do Vite) está na branch `feature/frontend-sprint-1`. A partir da integração (Sprint 3):
+
+```powershell
+Set-Location frontend
+npm install
+npm run dev
+```
+
+Acesse `http://localhost:5173` e configure `VITE_API_URL=http://localhost:8000`.
 
 ## Estrutura do repositório
 
 ```text
+/backend/                         — aplicação FastAPI (Sprints 1 e 2)
+  /app/                           — main, database, models, schemas, security, deps, seed
+    /routers/                     — auth, materias, assuntos, questoes, simulados, tentativas
+  /tests/                         — suíte pytest (CT01–CT08 e regressões)
 /E3/                              — DER, UML e schema SQL
 /docs/plano-de-testes.md          — estratégia e casos de teste planejados
 /docs/prototipo.md                — índice das telas do protótipo navegável
+/docs/sprints/                    — relatórios, evidências e retrospectivas por sprint
 /backlog.md                       — histórias priorizadas e critérios de aceite
 /Documento de Visão — SimulaAI.md — problema, público, objetivos e requisitos
 /E2-Lucas.md                      — termo de aceite do projeto
@@ -108,6 +111,8 @@ O SimulaAI será uma plataforma web de simulados para estudantes que se preparam
 - [Schema SQL](E3/schema.sql)
 - [Plano de testes](docs/plano-de-testes.md)
 - [Roteiro do protótipo](docs/prototipo.md)
+- [Sprint 1 — relatório](docs/sprints/sprint-1-relatorio.md) · [evidências](docs/sprints/sprint-1-evidencias-teste.md) · [retrospectiva](docs/sprints/sprint-1-retrospectiva.md)
+- [Sprint 2 — relatório](docs/sprints/sprint-2-relatorio.md) · [evidências](docs/sprints/sprint-2-evidencias-teste.md) · [retrospectiva](docs/sprints/sprint-2-retrospectiva.md)
 
 ## Convenções da equipe
 
@@ -118,14 +123,15 @@ O SimulaAI será uma plataforma web de simulados para estudantes que se preparam
 
 ## Testes
 
-O plano de testes da E4 está em [docs/plano-de-testes.md](docs/plano-de-testes.md). No estado atual ainda não há suíte automatizada nem comando de teste executável, pois a aplicação está em fase de documentação e modelagem.
-
-Quando o código for adicionado, o comando oficial deverá ser documentado aqui e executado antes de abrir uma PR. O mínimo esperado é:
+A suíte pytest cobre os casos CT01–CT08 do plano de testes (`docs/plano-de-testes.md`) e regressões:
 
 ```powershell
-npm test
-pytest
+Set-Location backend
+python -m pip install -r requirements.txt   # na primeira vez
+python -m pytest
 ```
+
+Estado atual: **31 testes, 100% aprovados** (execução local de 02/10/2026). O comando oficial deve ser executado antes de abrir uma PR; o frontend terá `npm test` (Vitest) a partir da integração na Sprint 3. Execução automatizada no CI (GitHub Actions) é ação da Sprint 3.
 
 ## Licença / Uso acadêmico
 
