@@ -1,25 +1,42 @@
-# Relatório Individual de Contribuição — Sprint 1 — Gabriel Reis de Souza (RA 2840482421005)
+# Relatório Individual de Contribuição — Sprint 1
 
-**Papel nesta sprint:** Backend / Product Owner
+**Nome:** Gabriel Reis de Souza  
+**RA:** 2840482421005
 
-## 1. O que fiz
+## 1. Atividades realizadas
 
-| Item | PR/commit | Status |
-|---|---|---|
-| Contribuição individual da Sprint 1 | Não há commit ou PR da Sprint 1 associado de forma verificável no histórico atual. | Precisa ser confirmado e complementado pelo integrante antes da entrega. |
+Durante a Sprint 1, minha principal contribuição foi auxiliar na organização inicial do trabalho da equipe e no alinhamento dos objetivos individuais de cada integrante.
 
-## 2. Rituais que participei
+Conversei com os membros do grupo para entender melhor quais atividades cada pessoa poderia assumir, considerando o andamento do projeto, as habilidades individuais e as necessidades da sprint.
 
-- [ ] Dailies/weeklies — não registrado no repositório.
-- [ ] Sprint Review — não registrado no repositório.
-- [ ] Retrospectiva — não registrado no repositório.
+A partir disso, ajudei a ajustar e distribuir os objetivos de forma mais clara, buscando evitar sobreposição de tarefas e deixando definido o que cada integrante deveria desenvolver ou acompanhar.
 
-## 3. PRs de colegas que revisei
+Também participei do acompanhamento geral do projeto, buscando manter as atividades da equipe alinhadas ao escopo definido para o SimulaAI.
 
-| PR | Autor | Comentário resumido |
-|---|---|---|
-| Nenhuma revisão da Sprint 1 registrada. | — | Completar somente se houver evidência no GitHub. |
+## 2. Principais contribuições
 
-## 4. Dificuldades e o que aprendi
+- Alinhamento individual com os integrantes da equipe.
+- Ajuste dos objetivos e responsabilidades de cada integrante.
+- Organização inicial da divisão de tarefas.
+- Apoio na definição das prioridades da sprint.
+- Acompanhamento do andamento geral das atividades.
+- Participação nas decisões de organização do projeto.
 
-Não registrado individualmente. Completar com uma reflexão pessoal e verificável antes da entrega.
+## 3. Evidências
+
+As atividades desta sprint tiveram caráter principalmente organizacional e de planejamento, portanto parte da contribuição não está diretamente representada por alterações de código.
+
+Quando aplicável, adicionar abaixo os links de commits, issues, documentos ou demais registros relacionados:
+
+- [Adicionar evidência/commit, se houver]
+- [Adicionar link de documento ou issue, se houver]
+
+## 4. Dificuldades encontradas
+
+Uma das principais dificuldades foi distribuir os objetivos de forma coerente entre os integrantes, considerando diferentes níveis de participação, disponibilidade e conhecimento técnico.
+
+Foi necessário ajustar as responsabilidades individualmente para que as tarefas ficassem mais claras e compatíveis com o andamento esperado do projeto.
+
+## 5. Resultado da sprint
+
+Ao final da sprint, a equipe ficou com uma divisão de objetivos mais clara, permitindo que cada integrante tivesse uma melhor compreensão de suas responsabilidades e das atividades esperadas para as próximas etapas do SimulaAI.
