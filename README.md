@@ -94,7 +94,7 @@ Acesse `http://localhost:5173` e configure `VITE_API_URL=http://localhost:8000`.
 /E3/                              — DER, UML e schema SQL
 /docs/plano-de-testes.md          — estratégia e casos de teste planejados
 /docs/prototipo.md                — índice das telas do protótipo navegável
-/docs/sprints/                    — relatórios, evidências e retrospectivas por sprint
+/relatorios/                    — relatórios, evidências e retrospectivas por sprint
 /backlog.md                       — histórias priorizadas e critérios de aceite
 /Documento de Visão — SimulaAI.md — problema, público, objetivos e requisitos
 /E2-Lucas.md                      — termo de aceite do projeto
@@ -111,8 +111,8 @@ Acesse `http://localhost:5173` e configure `VITE_API_URL=http://localhost:8000`.
 - [Schema SQL](E3/schema.sql)
 - [Plano de testes](docs/plano-de-testes.md)
 - [Roteiro do protótipo](docs/prototipo.md)
-- [Sprint 1 — relatório](docs/sprints/sprint-1-relatorio.md) · [evidências](docs/sprints/sprint-1-evidencias-teste.md) · [retrospectiva](docs/sprints/sprint-1-retrospectiva.md)
-- [Sprint 2 — relatório](docs/sprints/sprint-2-relatorio.md) · [evidências](docs/sprints/sprint-2-evidencias-teste.md) · [retrospectiva](docs/sprints/sprint-2-retrospectiva.md)
+- [Sprint 1 — relatório](relatorios/sprint-1-relatorio.md) · [evidências](relatorios/sprint-1-evidencias-teste.md) · [retrospectiva](relatorios/sprint-1-retrospectiva.md)
+- [Sprint 2 — relatório](relatorios/sprint-2-relatorio.md) · [evidências](relatorios/sprint-2-evidencias-teste.md) · [retrospectiva](relatorios/sprint-2-retrospectiva.md)
 
 ## Convenções da equipe
 
