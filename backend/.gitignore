@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Ambiente virtual
+.venv/
+venv/
+
+# Banco local de desenvolvimento
+*.db
+
+# Segredos — nunca versionar
+.env
