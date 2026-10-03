@@ -1,46 +1,103 @@
 # Relatório de Entrega — Sprint 2 — SimulaAI
 
-**Período:** 19/09/2026 a 02/10/2026 (Sprint 2 entregue junto com a Sprint 1, conforme autorização do professor)
-**Sprint Review:** 02/10/2026 — [confirmar com o grupo]
+**Período:** [data de início] a 02/10/2026  
+**Sprint Review:** 02/10/2026, com a equipe
 
 ## 1. Planejado vs. entregue
 
-| História (backlog) | Planejada para esta sprint? | Entregue? | Observação |
+| História (E2) | Planejada para esta sprint? | Entregue? | Observação |
 |---|---|---|---|
-| #4 Como aluno, quero iniciar um simulado | Sim | Sim | `POST /tentativas` registra a tentativa (status EM_ANDAMENTO); `GET /tentativas/{id}/questoes` devolve as questões na ordem cadastrada, sem revelar a alternativa correta |
-| #5 Como aluno, quero responder às questões | Sim | Sim | `POST /tentativas/{id}/respostas` persiste a resposta (uma por questão, substituível); valida que a questão pertence ao simulado e a alternativa à questão |
-| #6 Como aluno, quero finalizar e receber a correção | Sim | Sim | `POST /tentativas/{id}/finalizar` calcula acertos, erros e percentual de aproveitamento; a correção objetiva independe de serviço externo (IA) |
-| #1–#3 (Sprint 1) | — | Mantidas | Autenticação e CRUDs continuam cobertos pela suíte de testes (regressão) |
+| Autenticação com perfis Aluno e Administrador | Sim | Sim | Login, registro e autorização implementados no backend |
+| Gerenciamento de matérias e assuntos | Sim | Sim | CRUD implementado e testado |
+| Gerenciamento de questões e alternativas | Sim | Sim | CRUD e validação de alternativa correta implementados |
+| Realização de simulados | Sim | Sim | Tentativas podem ser iniciadas e questões são exibidas |
+| Registro de respostas | Sim | Sim | Respostas são persistidas e podem ser alteradas |
+| Correção e resultado | Sim | Sim | Acertos, erros e percentual são calculados |
+| Explicação por IA | Sim | Parcial | Indisponibilidade da IA não impede a correção objetiva |
 
 ## 2. Incremento funcional demonstrável
 
-Fluxo completo do simulado na API: **iniciar → responder → finalizar com correção automática**.
+Ao final da Sprint 2, o backend FastAPI suportava:
 
-- `GET /simulados` lista os simulados com o total de questões de cada um.
-- A tentativa fica registrada e vinculada ao aluno autenticado (história #4); dados de um aluno não vazam para outro.
-- Respostas persistidas com uma única escolha por questão; a resposta correta só é revelada após a finalização.
-- Correção calculada pelo próprio sistema (acertos, erros, percentual), sem depender da API de IA — critério de aceite da história #6.
+- login e registro;
+- autorização por perfil;
+- CRUD de matérias e assuntos;
+- CRUD de questões e alternativas;
+- início de tentativa de simulado;
+- registro e alteração de respostas;
+- finalização de tentativa;
+- cálculo de acertos, erros e percentual.
 
-**Como reproduzir:** ver `README.md`. Roteiro rápido: login como `ana.aluno@simulaai.app` → `GET /simulados` → `POST /tentativas` → `POST /tentativas/{id}/respostas` para cada questão → `POST /tentativas/{id}/finalizar`. Documentação interativa em `http://localhost:8000/docs`.
+Também foi realizada a reorganização do repositório, separando melhor:
+
+```text
+frontend/
+backend/
+database/
+docs/
+relatorios/
+```
+
+Para executar os testes:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m pytest
+```
+
+Resultado:
+
+```text
+31 passed, 1 warning
+```
 
 ## 3. Backlog atualizado
 
-- #4, #5, #6 — **concluídas** nesta sprint.
-- #7 (explicação por IA), #8 (histórico), #9 (dashboard) — Sprints 3.
-- #10 (evolução entre tentativas), #11 (deploy público) — Sprint 4.
+Ao fim da sprint:
+
+- autenticação e autorização foram concluídas no backend;
+- CRUD de matérias e assuntos foi concluído;
+- CRUD de questões e alternativas foi concluído;
+- fluxo básico de simulados foi concluído;
+- registro e correção das respostas foram concluídos;
+- integração completa do frontend com a API permaneceu pendente;
+- histórico e dashboard de desempenho permaneceram para sprints futuras.
+
+**Board:** [adicionar link ou print]
 
 ## 4. Evidências de teste
 
-CT05–CT08 do plano de testes (`docs/plano-de-testes.md`) implementados como testes automatizados pytest — **12 testes novos; suíte total: 31 testes, 100% aprovados** na execução local de 02/10/2026; detalhe em `relatorios/sprint-2-evidencias-teste.md`.
+Foram executados 31 testes automatizados no backend, todos aprovados.
+
+Os testes cobriram:
+
+- CT01 — autenticação;
+- CT02 — autorização;
+- CT03 — matérias e assuntos;
+- CT04 — questões e alternativas;
+- CT05 — início de simulado;
+- CT06 — registro de resposta;
+- CT07 — cálculo do resultado;
+- CT08 — funcionamento sem serviço de IA.
+
+Detalhamento:
+
+`relatorios/sprint-2-evidencias-teste.md`
 
 ## 5. Retrospectiva e contribuição individual
 
-- Ata de retrospectiva: `relatorios/sprint-2-retrospectiva.md`
-- Relatórios individuais: `relatorios/sprint-2-contribuicao-{gabriel,davi,vinicius,cesar}.md`
+- Retrospectiva: `relatorios/sprint-2-retrospectiva.md`
+- Gabriel Reis de Souza: `relatorios/sprint-2-contribuicao-gabriel-reis-de-souza.md`
+- Vinicius Brasileiro Veras: `relatorios/sprint-2-contribuicao-vinicius-brasileiro-veras.md`
+
+Cesar Augusto Saraiva Fifolato não teve contribuição registrada nesta sprint.
 
 ## 6. Riscos/impedimentos para a próxima sprint
 
-- **Integração frontend↔backend:** as telas React usam dados em memória; o contrato das rotas está documentado em `/docs` (Swagger). Responsável: Cesar, com apoio do backend.
-- **Explicação por IA (história #7):** definir o provedor e a chave (`AI_API_KEY`) e implementar com fallback — a correção objetiva nunca pode parar se a IA falhar.
-- **PostgreSQL/Supabase:** conectar via `DATABASE_URL` e validar o schema no banco real (o backend já troca de banco por variável de ambiente).
-- **CI (GitHub Actions):** executar pytest a cada PR.
+- integrar o frontend ao backend real;
+- substituir dados locais restantes;
+- implementar histórico de tentativas;
+- implementar dashboard de desempenho do aluno;
+- concluir integração com IA;
+- configurar CI para execução automática dos testes.
