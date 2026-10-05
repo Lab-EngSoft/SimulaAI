@@ -64,7 +64,6 @@ Ao fim da sprint:
 - integração completa do frontend com a API permaneceu pendente;
 - histórico e dashboard de desempenho permaneceram para sprints futuras.
 
-**Board:** [adicionar link ou print]
 
 ## 4. Evidências de teste
 
@@ -91,7 +90,8 @@ Detalhamento:
 - Gabriel Reis de Souza: `relatorios/sprint-2-contribuicao-gabriel-reis-de-souza.md`
 - Vinicius Brasileiro Veras: `relatorios/sprint-2-contribuicao-vinicius-brasileiro-veras.md`
 
-Cesar Augusto Saraiva Fifolato não teve contribuição registrada nesta sprint.
+Cesar Augusto e Davi Cirilo não tiveram contribuições registradas nesta sprint.
+Davi Cirilo vai fazer integração no Banco de Dados externo(Supabase)
 
 ## 6. Riscos/impedimentos para a próxima sprint
 
@@ -101,3 +101,4 @@ Cesar Augusto Saraiva Fifolato não teve contribuição registrada nesta sprint.
 - implementar dashboard de desempenho do aluno;
 - concluir integração com IA;
 - configurar CI para execução automática dos testes.
+- integrar a banco de dados externo
