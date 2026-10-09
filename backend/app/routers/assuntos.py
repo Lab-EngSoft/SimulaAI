@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.services.integridade import assunto_usado_em_simulado
 from app.deps import get_current_user, require_admin
 from app.models import Assunto, Materia
 from app.schemas import AssuntoIn, AssuntoOut
@@ -85,5 +86,7 @@ def remover_assunto(
     _admin=Depends(require_admin),
 ):
     assunto = _obter_ou_404(db, assunto_id)
+    if assunto_usado_em_simulado(db, assunto_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Assunto contém questões vinculadas a simulados. Remova os vínculos antes de excluí-lo.")
     db.delete(assunto)
     db.commit()
