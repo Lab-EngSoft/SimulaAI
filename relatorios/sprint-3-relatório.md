@@ -1,7 +1,7 @@
 # Relatório de Entrega — Sprint 3 — SimulaAI
 
 **Período:** 02/10/2026 a 09/10/2026 
-**Responsável pelas atividades descritas:** Gabriel Reis de Souza e Davi Cirilo 
+**Responsável pelas atividades descritas:** Gabriel Reis de Souza e Davi Cirilo
 **Projeto:** SimulaAI 
 
 ## 1. Planejado vs. entregue
