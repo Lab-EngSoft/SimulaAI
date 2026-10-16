@@ -174,3 +174,39 @@ class RespostaCorrigidaOut(BaseModel):
 class FinalizarOut(BaseModel):
     tentativa: TentativaOut
     respostas: list[RespostaCorrigidaOut]
+
+
+# ---------- Explicação da IA (história #7, Sprint 3) ----------
+
+class ExplicacaoOut(BaseModel):
+    """Explicação do tutor para uma questão ERRADA (só após finalizar)."""
+
+    questao_id: int
+    enunciado: str
+    alternativa_escolhida_id: int
+    alternativa_escolhida_texto: str
+    alternativa_correta_id: int
+    alternativa_correta_texto: str
+    explicacao: str
+
+
+# ---------- Dashboard do aluno (história #9, Sprint 3) ----------
+
+class DesempenhoRotuloOut(BaseModel):
+    """Uma linha agregada de desempenho (por matéria ou por assunto)."""
+
+    rotulo: str
+    respondidas: int
+    acertos: int
+    erros: int
+    percentual: float
+
+
+class DashboardOut(BaseModel):
+    total_tentativas: int
+    tentativas_finalizadas: int
+    total_acertos: int
+    total_erros: int
+    media_aproveitamento: float
+    por_materia: list[DesempenhoRotuloOut] = []
+    por_assunto: list[DesempenhoRotuloOut] = []

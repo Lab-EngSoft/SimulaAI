@@ -32,6 +32,7 @@ from app.models import (
 )
 from app.schemas import (
     AlternativaJogoOut,
+    ExplicacaoOut,
     FinalizarOut,
     QuestaoJogoOut,
     RespostaCorrigidaOut,
@@ -39,6 +40,7 @@ from app.schemas import (
     TentativaIn,
     TentativaOut,
 )
+from app.services.explicacao_ia import gerar_explicacao
 
 router = APIRouter(prefix="/tentativas", tags=["Simulados do aluno"])
 
@@ -68,6 +70,26 @@ def _questao_pertence_ao_simulado(db: Session, simulado_id: int, questao_id: int
         .first()
     )
     return linha is not None
+
+
+def _explicacoes_para_os_erros(db: Session, tentativa: Tentativa) -> None:
+    """História #7: para cada resposta ERRADA, gera a explicação do tutor.
+
+    Chama o serviço que tenta a IA e, se indisponível, usa o fallback
+    determinístico — por isso esta função nunca interrompe a finalização
+    (a correção objetiva já foi calculada antes, regra do CT08).
+    """
+    for resposta in tentativa.respostas:
+        if resposta.correta:
+            continue
+        escolhida = db.get(Alternativa, resposta.alternativa_id)
+        questao = db.get(Questao, resposta.questao_id)
+        correta = next(
+            (a for a in questao.alternativas if a.correta), None
+        )
+        if escolhida is None or questao is None or correta is None:
+            continue
+        resposta.explicacao_ia = gerar_explicacao(questao, correta, escolhida)
 
 
 @router.post("", response_model=TentativaOut, status_code=status.HTTP_201_CREATED)
@@ -234,11 +256,57 @@ def finalizar(
     tentativa.percentual_aproveitamento = round(percentual, 2)
     tentativa.data_fim = agora_utc()
     tentativa.status = "FINALIZADO"
+
+    # História #7: explicações para os erros, ANTES do commit — o endpoint de
+    # explicação e o retorno da correção já saem preenchidos.
+    _explicacoes_para_os_erros(db, tentativa)
     db.commit()
     db.refresh(tentativa)
 
-    # explicacao_ia permanece NULL até a Sprint 3 (história #7).
     return FinalizarOut(
         tentativa=TentativaOut.model_validate(tentativa),
         respostas=[RespostaCorrigidaOut.model_validate(r) for r in respostas],
     )
+
+
+@router.get("/{tentativa_id}/explicacoes", response_model=list[ExplicacaoOut])
+def explicacoes_da_tentativa(
+    tentativa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(get_current_user),
+):
+    """História #7: devolve a explicação de cada questão ERRADA da tentativa.
+
+    Só existe depois da finalização (antes não há o que explicar e revelar
+    conteúdo antecipadamente vazaria a resposta correta). Cada item mostra a
+    alternativa que o aluno escolheu, a correta e o texto do tutor.
+    """
+    tentativa = _obter_tentativa_ou_404(db, tentativa_id)
+    _verificar_dono(tentativa, usuario)
+    if tentativa.status != "FINALIZADO":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Finalize a tentativa antes de consultar as explicações.",
+        )
+
+    saida = []
+    for resposta in tentativa.respostas:
+        if resposta.correta:
+            continue
+        escolhida = db.get(Alternativa, resposta.alternativa_id)
+        questao = db.get(Questao, resposta.questao_id)
+        correta = next((a for a in questao.alternativas if a.correta), None)
+        if escolhida is None or questao is None or correta is None:
+            continue
+        saida.append(
+            ExplicacaoOut(
+                questao_id=questao.id,
+                enunciado=questao.enunciado,
+                alternativa_escolhida_id=escolhida.id,
+                alternativa_escolhida_texto=escolhida.texto,
+                alternativa_correta_id=correta.id,
+                alternativa_correta_texto=correta.texto,
+                explicacao=resposta.explicacao_ia or "",
+            )
+        )
+    return saida

@@ -6,7 +6,7 @@ O SimulaAI é uma plataforma web de simulados para estudantes que se preparam pa
 **Repositório:** https://github.com/Lab-EngSoft/SimulaAI
 **Equipe:** Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (2840482421006) — Vinicius Brasileiro Veras (2840482421021) — Cesar Augusto Saraifa Fifolato (2840482421022) · Laboratório de Engenharia de Software · ADS Fatec Ribeirão Preto
 
-> **Estado atual (entregas E5–E6):** o backend FastAPI das Sprints 1 e 2 está implementado e testado (31 testes pytest, 100% aprovados): autenticação com perfis Aluno/Administrador, CRUD de matérias, assuntos e questões, e o fluxo completo do simulado (iniciar → responder → finalizar com correção automática). O frontend React está pronto na branch `feature/frontend-sprint-1` (dados em memória) e aguarda integração com a API na Sprint 3.
+> **Estado atual (entrega E7):** o backend FastAPI das Sprints 1–3 está implementado e testado (36 testes pytest, 100% aprovados): autenticação com perfis Aluno/Administrador, CRUD de matérias, assuntos e questões, fluxo completo do simulado (iniciar → responder → finalizar com correção automática), **explicação dos erros com IA e fallback** (história #7), **histórico de tentativas** (#8) e **dashboard de desempenho agregado** (#9). CI com GitHub Actions roda a suíte a cada push/PR. O frontend React está pronto na branch `feature/frontend-sprint-1` (dados em memória) e aguarda integração com a API na Sprint 4.
 
 ## Stack
 
@@ -49,8 +49,10 @@ O SimulaAI é uma plataforma web de simulados para estudantes que se preparam pa
    | `SECRET_KEY` | Sim | Chave usada para assinar os tokens JWT; gere uma chave forte (mínimo 32 caracteres) |
    | `CORS_ORIGINS` | Sim | Origens permitidas, por exemplo `http://localhost:5173` |
    | `TOKEN_EXPIRA_MINUTOS` | Não | Validade do token em minutos (padrão: 480 = 8h) |
-   | `AI_API_KEY` | Sprint 3 | Chave da API de IA usada pelo backend (explicações) |
-   | `VITE_API_URL` | Sprint 3 | URL da API para o frontend, por exemplo `http://localhost:8000` |
+   | `AI_API_KEY` | Não | Chave da API de IA para as explicações (história #7). Sem ela, o sistema usa o fallback determinístico e segue 100% funcional |
+   | `AI_BASE_URL` | Não | Base de um provedor compatível com a API da OpenAI (padrão: `https://api.openai.com/v1`) |
+   | `AI_MODEL` | Não | Modelo usado nas explicações (padrão: `gpt-4o-mini`) |
+   | `VITE_API_URL` | Sprint 4 | URL da API para o frontend, por exemplo `http://localhost:8000` |
 
 4. Suba o servidor:
 
@@ -74,7 +76,7 @@ O SimulaAI é uma plataforma web de simulados para estudantes que se preparam pa
 
 ## Como rodar o frontend localmente
 
-A pasta `frontend/` completa (com `package.json`, `index.html`, `main.tsx` e configurações do Vite) está na branch `feature/frontend-sprint-1`. A partir da integração (Sprint 3):
+A pasta `frontend/` completa (com `package.json`, `index.html`, `main.tsx` e configurações do Vite) está na branch `feature/frontend-sprint-1`. A partir da integração (Sprint 4):
 
 ```powershell
 Set-Location frontend
@@ -87,10 +89,12 @@ Acesse `http://localhost:5173` e configure `VITE_API_URL=http://localhost:8000`.
 ## Estrutura do repositório
 
 ```text
-/backend/                         — aplicação FastAPI (Sprints 1 e 2)
+/backend/                         — aplicação FastAPI (Sprints 1–3)
   /app/                           — main, database, models, schemas, security, deps, seed
-    /routers/                     — auth, materias, assuntos, questoes, simulados, tentativas
-  /tests/                         — suíte pytest (CT01–CT08 e regressões)
+    /routers/                     — auth, materias, assuntos, questoes, simulados, tentativas, dashboard
+    /services/                    — explicacao_ia (IA com fallback)
+  /tests/                         — suíte pytest (CT01–CT12 e regressões)
+/.github/workflows/tests.yml      — CI: pytest a cada push/PR para a main
 /E3/                              — DER, UML e schema SQL
 /docs/plano-de-testes.md          — estratégia e casos de teste planejados
 /docs/prototipo.md                — índice das telas do protótipo navegável
@@ -113,6 +117,7 @@ Acesse `http://localhost:5173` e configure `VITE_API_URL=http://localhost:8000`.
 - [Roteiro do protótipo](docs/prototipo.md)
 - [Sprint 1 — relatório](relatorios/sprint-1-relatorio.md) · [evidências](relatorios/sprint-1-evidencias-teste.md) · [retrospectiva](relatorios/sprint-1-retrospectiva.md)
 - [Sprint 2 — relatório](relatorios/sprint-2-relatorio.md) · [evidências](relatorios/sprint-2-evidencias-teste.md) · [retrospectiva](relatorios/sprint-2-retrospectiva.md)
+- [Sprint 3 — relatório](relatorios/sprint-3-relatorio.md) · [evidências](relatorios/sprint-3-evidencias-teste.md) · [retrospectiva](relatorios/sprint-3-retrospectiva.md)
 
 ## Convenções da equipe
 
@@ -123,7 +128,7 @@ Acesse `http://localhost:5173` e configure `VITE_API_URL=http://localhost:8000`.
 
 ## Testes
 
-A suíte pytest cobre os casos CT01–CT08 do plano de testes (`docs/plano-de-testes.md`) e regressões:
+A suíte pytest cobre os casos CT01–CT12 do plano de testes (`docs/plano-de-testes.md`) e regressões:
 
 ```powershell
 Set-Location backend
@@ -131,7 +136,7 @@ python -m pip install -r requirements.txt   # na primeira vez
 python -m pytest
 ```
 
-Estado atual: **31 testes, 100% aprovados** (execução local de 02/10/2026). O comando oficial deve ser executado antes de abrir uma PR; o frontend terá `npm test` (Vitest) a partir da integração na Sprint 3. Execução automatizada no CI (GitHub Actions) é ação da Sprint 3.
+Estado atual: **36 testes, 100% aprovados** (execução local de 03/10/2026). O CI (GitHub Actions, `.github/workflows/tests.yml`) executa a suíte automaticamente a cada push/PR para a main — sempre sem `AI_API_KEY`, provando que correção e explicações funcionam sem a IA. O comando oficial deve ser executado antes de abrir uma PR.
 
 ## Licença / Uso acadêmico
 
