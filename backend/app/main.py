@@ -6,8 +6,11 @@ Documentação automática: http://localhost:8000/docs
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()
 
 from app.database import Base, engine
 from app.routers import assuntos, auth, materias, questoes, simulados, tentativas
