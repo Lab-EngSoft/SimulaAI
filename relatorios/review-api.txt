@@ -1,0 +1,96 @@
+REVIEW DE API — SIMULAAI
+Data: 16/10/2026
+Escopo: análise estática da documentação e do schema SQL disponíveis no repositório.
+
+RESUMO
+
+Não foi encontrado código de backend nem uma especificação formal de endpoints para revisar. O README descreve FastAPI como tecnologia planejada, mas informa que a aplicação ainda está em fase de documentação/modelagem. Portanto, este documento é uma revisão do contrato e dos riscos de integração que devem ser tratados na implementação; não afirma que existam rotas já implementadas ou vulnerabilidades exploráveis em uma API publicada.
+
+Referências analisadas:
+- README.md: stack, configuração e estado do backend.
+- backlog.md: histórias e critérios de aceite.
+- E3/schema.sql: entidades, chaves e restrições do banco.
+- Documento de Visão — SimulaAI.md: requisitos, perfis e regras de negócio.
+
+PONTOS DE ATENÇÃO
+
+1. Alta — Resposta pode apontar para alternativa de outra questão
+Referência: E3/schema.sql, tabela resposta e FKs fk_resposta_questao/fk_resposta_alternativa.
+As duas chaves estrangeiras confirmam separadamente que a questão e a alternativa existem, mas não que a alternativa pertence à questão informada na mesma resposta. Assim, uma requisição malformada ou um erro de implementação pode registrar uma resposta cruzada.
+Recomendação: validar no serviço que alternativa.questao_id corresponde a resposta.questao_id. Para garantia também no banco, considerar uma chave única composta em alternativa (id, questao_id) e uma FK composta em resposta (alternativa_id, questao_id).
+Teste de aceite: tentar gravar resposta com alternativa existente de outra questão; a operação deve ser recusada sem alterar a tentativa.
+
+2. Alta — Autorização por perfil precisa ser aplicada em cada rota protegida
+Referência: backlog.md, história 1; Documento de Visão, perfis Aluno e Administrador; README.md, SECRET_KEY.
+A documentação exige perfis distintos e validação de permissões no backend, mas ainda não descreve tokens/sessões, expiração ou matriz de autorização. Ocultar telas no frontend não protege operações administrativas nem dados de outros alunos.
+Recomendação: autenticar a identidade no servidor e aplicar autorização por perfil em cada operação. Consultas e alterações de tentativas devem sempre ser limitadas ao usuário autenticado, sem confiar em usuario_id recebido do cliente. Documentar o formato de autenticação, expiração e respostas 401/403.
+Testes de aceite: aluno não consegue gerenciar conteúdo; aluno A não consulta tentativas do aluno B; requisição sem credencial recebe 401; credencial válida sem permissão recebe 403.
+
+3. Alta — Regra de uma única alternativa correta não está garantida pelo schema
+Referência: E3/schema.sql, tabela alternativa; backlog.md, história 3.
+A tabela permite cadastrar uma questão sem alternativa correta ou com várias alternativas corretas, embora o backlog exija exatamente uma. A API deve validar essa regra antes de publicar/ativar uma questão e evitar estados parciais durante edição.
+Recomendação: salvar questão e alternativas em transação; validar alternativas não vazias e exatamente uma correta. Considerar constraint/índice ou mecanismo equivalente no banco para impedir duas corretas. Se a garantia de pelo menos uma correta depender da aplicação, testar todos os caminhos de criação e atualização.
+Teste de aceite: rejeitar questão com zero ou duas alternativas corretas; manter os dados anteriores se a atualização falhar.
+
+4. Média — Consistência e duplicidade das respostas de uma tentativa
+Referência: E3/schema.sql, tabela resposta.
+Não há restrição única para (tentativa_id, questao_id), portanto a mesma questão pode receber várias respostas na mesma tentativa. Também não há validação declarada de que a questão pertença ao simulado daquela tentativa. O campo resposta.correta pode divergir do valor calculado pela alternativa.
+Recomendação: definir se responder novamente substitui a escolha anterior ou cria versão; para o MVP, usar uma resposta por questão e fazer upsert/atualização idempotente. Validar que a questão pertence ao simulado da tentativa. Calcular correção no servidor comparando a alternativa com a resposta correta cadastrada; nunca aceitar correta, acertos, erros ou percentual enviados pelo cliente como fonte de verdade.
+Teste de aceite: enviar duas respostas à mesma questão, uma questão fora do simulado e um campo correta manipulado; garantir uma única resposta válida e pontuação calculada no servidor.
+
+5. Média — Finalização concorrente e cálculo de pontuação
+Referência: E3/schema.sql, tabelas tentativa e resposta; backlog.md, história 6.
+O schema armazena status, acertos, erros e percentual, mas não define transição atômica de EM_ANDAMENTO para FINALIZADO. Chamadas repetidas ou simultâneas de finalização podem recalcular ou gerar efeitos duplicados, inclusive chamadas à API de IA.
+Recomendação: finalizar dentro de transação, bloquear ou atualizar condicionalmente a tentativa ainda em andamento e tornar a operação idempotente. Persistir primeiro a correção objetiva; explicações de IA devem ser complementares e não impedir a finalização. Definir comportamento de respostas em branco para que o modelo e a API concordem.
+Teste de aceite: repetir e concorrer a finalizações; a tentativa deve ter um único resultado consistente e não duplicar efeitos.
+
+6. Média — Exclusão em cascata pode apagar histórico acadêmico
+Referência: E3/schema.sql, FKs de usuario, simulado, questao e entidades dependentes com ON DELETE CASCADE.
+Excluir usuário, simulado ou questão pode apagar tentativas e respostas históricas, prejudicando histórico e relatórios previstos no backlog.
+Recomendação: preferir desativação/arquivamento para conteúdo e usuários referenciados por tentativas. Definir política explícita de retenção e autorização para exclusão de dados pessoais; não expor exclusões em massa sem confirmação e controle.
+Teste de aceite: arquivar questão usada em tentativa sem alterar o resultado histórico; verificar o comportamento de exclusão conforme a política definida.
+
+CONTRATO DE ROTAS SUGERIDO PARA O MVP
+
+As rotas abaixo são propostas para orientar a implementação; não estão confirmadas como existentes.
+
+Autenticação
+- POST /auth/login — recebe credenciais e retorna token/sessão e dados públicos do usuário.
+- GET /auth/me — retorna identidade e perfil da credencial atual.
+
+Conteúdo (Administrador)
+- GET/POST /materias
+- PATCH/DELETE /materias/{materia_id}
+- GET/POST /materias/{materia_id}/assuntos
+- PATCH/DELETE /assuntos/{assunto_id}
+- GET/POST /questoes
+- GET/PATCH/DELETE /questoes/{questao_id}
+
+Simulados e tentativas
+- GET /simulados — lista simulados disponíveis; aceitar filtros documentados por matéria/assunto, se aplicável.
+- POST /simulados/{simulado_id}/tentativas — cria tentativa para o usuário autenticado.
+- GET /tentativas/{tentativa_id} — retorna apenas dados acessíveis ao usuário autenticado.
+- PUT /tentativas/{tentativa_id}/respostas/{questao_id} — grava ou substitui a escolha; validar vínculo e estado.
+- POST /tentativas/{tentativa_id}/finalizacao — corrige e finaliza de forma idempotente.
+- GET /tentativas — lista o histórico do usuário autenticado, com paginação.
+- GET /dashboard — retorna indicadores agregados apenas do usuário autenticado.
+
+CONTRATO E COMPORTAMENTO RECOMENDADOS
+
+- Usar JSON consistente, códigos HTTP convencionais e erros estruturados com código estável, mensagem legível e detalhes de validação por campo.
+- Validar tamanho/formato de campos, existência e relação entre IDs, situação da tentativa e permissões no servidor.
+- Não incluir senha_hash, alternativa correta nem explicação/resultado antes de a tentativa ser finalizada. Durante o simulado, retornar apenas dados necessários para responder.
+- Paginar listagens e definir limites de tamanho, filtros e ordenação.
+- Usar transações para operações que gravam questão com alternativas e para correção/finalização.
+- Manter segredos fora do repositório; não retornar detalhes internos, SQL ou chaves em erros.
+- Documentar OpenAPI e exemplos de requisição/resposta antes da integração do frontend.
+
+PRIORIDADES SUGERIDAS
+
+P0 — Antes de disponibilizar rotas: autenticação e autorização no servidor; isolamento dos dados por usuário; validação de alternativa pertencente à questão; cálculo de correção no backend.
+P1 — Antes do fluxo completo: unicidade de resposta por questão/tentativa, finalização idempotente, transações e política de histórico/exclusão.
+P2 — Para integração estável: paginação, formato uniforme de erros, contrato OpenAPI e testes automatizados unitários/de integração para os cenários acima.
+
+CONCLUSÃO
+
+O modelo e o backlog fornecem base funcional para desenhar a API, mas não há implementação ou contrato HTTP no repositório que permita avaliar comportamento real de endpoints. Resolver as inconsistências de integridade referencial e especificar autorização, correção e finalização antes de integrar o frontend reduzirá retrabalho e risco de dados incorretos.
