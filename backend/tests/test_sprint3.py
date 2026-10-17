@@ -1,19 +1,17 @@
-"""CT09–CT12 do plano de testes — histórias #7, #8 e #9 (Sprint 3).
+"""CT11–CT12 do plano de testes — histórias #8 e #9 (Sprint 3).
 
-- CT09: explicação com FALLBACK — sem AI_API_KEY, todo erro sai explicado
-  com os dados do banco e a correção segue funcionando (regra da #6).
-- CT10: explicação via IA — com a chave configurada (serviço simulado via
-  monkeypatch), o texto da IA é armazenado na resposta errada.
 - CT11: histórico — tentativas de SIMULADOS DIFERENTES aparecem com seus
   resultados, associadas ao aluno autenticado (nada vaza para outro aluno).
 - CT12: dashboard — agregação por matéria e assunto com JOIN/GROUP BY.
+
+Os casos de IA da Sprint 3 (história #7) são cobertos pelos testes de
+contrato do grupo em `test_ia_contract.py` (provedor injetado, 503 quando
+indisponível, correção objetiva preservada).
 
 O seed cria 1 simulado com 2 questões:
   q1 (Porcentagem/Matemática): alternativas [10(errada), 30(CORRETA), 35]
   q2 (Interpretação/L. Portuguesa): [info central(CORRETA), maior palavra, opinião]
 """
-import pytest
-
 from app.database import SessionLocal
 from app.models import Simulado, simulado_questao
 
@@ -39,7 +37,8 @@ def _responder(client, headers, tentativa_id, questao_id, alternativa_id):
 
 
 def _criar_simulado_extra(questao_id: int, titulo: str) -> int:
-    """Cria um 2º simulado direto no banco (não há POST /simulados no MVP)."""
+    """Cria um 2º simulado direto no banco (o CRUD administrativo de
+    simulados é coberto pelos testes do grupo em test_admin_simulados.py)."""
     db = SessionLocal()
     try:
         simulado = Simulado(titulo=titulo, descricao="Criado no teste.")
@@ -67,73 +66,6 @@ def _fluxo_finalizado(client, headers, simulado_id, escolhas):
     finalizado = client.post(f"/tentativas/{tentativa['id']}/finalizar", headers=headers)
     assert finalizado.status_code == 200, finalizado.text
     return tentativa["id"], finalizado.json()
-
-
-# ---------- CT09: fallback sem IA ----------
-
-def test_ct09_explicacao_fallback_sem_ia(client, aluno_headers, monkeypatch):
-    monkeypatch.delenv("AI_API_KEY", raising=False)
-    simulado_id = _simulado_id(client, aluno_headers)
-
-    # ainda em andamento: explicar agora vazaría a correta
-    provisoria = _iniciar(client, aluno_headers, simulado_id)
-    cedo = client.get(f"/tentativas/{provisoria['id']}/explicacoes", headers=aluno_headers)
-    assert cedo.status_code == 409
-
-    # q1 errada (índice 0), q2 correta (índice 0) → 1 acerto, 1 erro
-    tentativa_id, correcao = _fluxo_finalizado(client, aluno_headers, simulado_id, [0, 0])
-    assert correcao["tentativa"]["acertos"] == 1  # correção segue funcionando sem IA
-
-    erradas = [r for r in correcao["respostas"] if not r["correta"]]
-    assert len(erradas) == 1
-    texto = erradas[0]["explicacao_ia"]
-    assert texto, "erro deveria sair explicado mesmo sem IA"
-    assert "30 alunos" in texto  # a alternativa correta entra no fallback
-
-    # questões corretas NÃO recebem explicação
-    corretas = [r for r in correcao["respostas"] if r["correta"]]
-    assert all(r["explicacao_ia"] is None for r in corretas)
-
-    # endpoint dedicado: 1 explicação, com escolhida x correta
-    lista = client.get(f"/tentativas/{tentativa_id}/explicacoes", headers=aluno_headers)
-    assert lista.status_code == 200
-    explicacoes = lista.json()
-    assert len(explicacoes) == 1
-    item = explicacoes[0]
-    assert item["alternativa_correta_texto"] == "30 alunos"
-    assert item["explicacao"] == texto
-
-
-def test_ct09_cem_por_cento_dos_erros_explicados(client, aluno_headers, monkeypatch):
-    """Critério de aceite: explicações para (pelo menos) 90% dos erros."""
-    monkeypatch.delenv("AI_API_KEY", raising=False)
-    simulado_id = _simulado_id(client, aluno_headers)
-    _, correcao = _fluxo_finalizado(client, aluno_headers, simulado_id, [0, 1])  # tudo errado
-
-    erradas = [r for r in correcao["respostas"] if not r["correta"]]
-    explicadas = [r for r in erradas if r["explicacao_ia"]]
-    assert len(explicadas) / len(erradas) >= 0.9
-
-
-# ---------- CT10: IA disponível ----------
-
-def test_ct10_explicacao_via_ia(monkeypatch, client, aluno_headers):
-    """Com a chave configurada, o texto vem da IA (serviço simulado no teste)."""
-    import app.routers.tentativas as router
-
-    monkeypatch.setenv("AI_API_KEY", "chave-fake-para-teste")
-    monkeypatch.setattr(
-        router,
-        "gerar_explicacao",
-        lambda *args, **kwargs: "Explicação gerada pela IA de teste: revise porcentagem.",
-    )
-    simulado_id = _simulado_id(client, aluno_headers)
-    _, correcao = _fluxo_finalizado(client, aluno_headers, simulado_id, [0, 0])
-
-    erradas = [r for r in correcao["respostas"] if not r["correta"]]
-    assert erradas[0]["explicacao_ia"] == (
-        "Explicação gerada pela IA de teste: revise porcentagem."
-    )
 
 
 # ---------- CT11: histórico ----------

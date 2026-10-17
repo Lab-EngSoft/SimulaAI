@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.services.ia import ContextoExplicacao, IAIndisponivel, obter_provedor, status_ia
 from app.deps import get_current_user, require_aluno
 from app.models import (
     Alternativa,
@@ -32,15 +33,14 @@ from app.models import (
 )
 from app.schemas import (
     AlternativaJogoOut,
-    ExplicacaoOut,
     FinalizarOut,
+    IAStatusOut,
     QuestaoJogoOut,
     RespostaCorrigidaOut,
     RespostaIn,
     TentativaIn,
     TentativaOut,
 )
-from app.services.explicacao_ia import gerar_explicacao
 
 router = APIRouter(prefix="/tentativas", tags=["Simulados do aluno"])
 
@@ -72,24 +72,15 @@ def _questao_pertence_ao_simulado(db: Session, simulado_id: int, questao_id: int
     return linha is not None
 
 
-def _explicacoes_para_os_erros(db: Session, tentativa: Tentativa) -> None:
-    """História #7: para cada resposta ERRADA, gera a explicação do tutor.
-
-    Chama o serviço que tenta a IA e, se indisponível, usa o fallback
-    determinístico — por isso esta função nunca interrompe a finalização
-    (a correção objetiva já foi calculada antes, regra do CT08).
-    """
-    for resposta in tentativa.respostas:
-        if resposta.correta:
-            continue
-        escolhida = db.get(Alternativa, resposta.alternativa_id)
-        questao = db.get(Questao, resposta.questao_id)
-        correta = next(
-            (a for a in questao.alternativas if a.correta), None
-        )
-        if escolhida is None or questao is None or correta is None:
-            continue
-        resposta.explicacao_ia = gerar_explicacao(questao, correta, escolhida)
+@router.get("/ia/status", response_model=IAStatusOut)
+def verificar_ia(_usuario=Depends(get_current_user)):
+    """Sinalização para o frontend; não inicia nenhuma chamada externa."""
+    disponivel = status_ia()
+    return IAStatusOut(
+        disponivel=disponivel,
+        descricao="Explicações com IA disponíveis." if disponivel
+        else "Explicações com IA serão implementadas em uma próxima sprint.",
+    )
 
 
 @router.post("", response_model=TentativaOut, status_code=status.HTTP_201_CREATED)
@@ -256,57 +247,87 @@ def finalizar(
     tentativa.percentual_aproveitamento = round(percentual, 2)
     tentativa.data_fim = agora_utc()
     tentativa.status = "FINALIZADO"
-
-    # História #7: explicações para os erros, ANTES do commit — o endpoint de
-    # explicação e o retorno da correção já saem preenchidos.
-    _explicacoes_para_os_erros(db, tentativa)
     db.commit()
     db.refresh(tentativa)
 
+    # explicacao_ia permanece NULL até a Sprint 3 (história #7).
     return FinalizarOut(
         tentativa=TentativaOut.model_validate(tentativa),
         respostas=[RespostaCorrigidaOut.model_validate(r) for r in respostas],
     )
 
 
-@router.get("/{tentativa_id}/explicacoes", response_model=list[ExplicacaoOut])
-def explicacoes_da_tentativa(
+@router.get("/{tentativa_id}/resultado", response_model=FinalizarOut)
+def consultar_resultado(
     tentativa_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    """História #7: devolve a explicação de cada questão ERRADA da tentativa.
-
-    Só existe depois da finalização (antes não há o que explicar e revelar
-    conteúdo antecipadamente vazaria a resposta correta). Cada item mostra a
-    alternativa que o aluno escolheu, a correta e o texto do tutor.
-    """
+    """Permite rever uma correção, sem finalizar a mesma tentativa novamente."""
     tentativa = _obter_tentativa_ou_404(db, tentativa_id)
     _verificar_dono(tentativa, usuario)
     if tentativa.status != "FINALIZADO":
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Finalize a tentativa antes de consultar as explicações.",
-        )
+        raise HTTPException(status.HTTP_409_CONFLICT, "Esta tentativa ainda não foi finalizada.")
+    return FinalizarOut(
+        tentativa=TentativaOut.model_validate(tentativa),
+        respostas=[RespostaCorrigidaOut.model_validate(r) for r in tentativa.respostas],
+    )
 
-    saida = []
-    for resposta in tentativa.respostas:
-        if resposta.correta:
-            continue
-        escolhida = db.get(Alternativa, resposta.alternativa_id)
-        questao = db.get(Questao, resposta.questao_id)
-        correta = next((a for a in questao.alternativas if a.correta), None)
-        if escolhida is None or questao is None or correta is None:
-            continue
-        saida.append(
-            ExplicacaoOut(
-                questao_id=questao.id,
-                enunciado=questao.enunciado,
-                alternativa_escolhida_id=escolhida.id,
-                alternativa_escolhida_texto=escolhida.texto,
-                alternativa_correta_id=correta.id,
-                alternativa_correta_texto=correta.texto,
-                explicacao=resposta.explicacao_ia or "",
-            )
-        )
-    return saida
+
+@router.post("/{tentativa_id}/explicacoes", response_model=FinalizarOut)
+def gerar_explicacoes(
+    tentativa_id: int,
+    db: Session = Depends(get_db),
+    aluno=Depends(require_aluno),
+):
+    """Contrato pronto para a IA: explica apenas respostas erradas após a correção.
+
+    O provedor é injetável e a explicação é persistida em resposta.explicacao_ia.
+    Indisponibilidade da IA não altera notas ou respostas objetivas.
+    """
+    tentativa = _obter_tentativa_ou_404(db, tentativa_id)
+    if tentativa.usuario_id != aluno.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esta tentativa pertence a outro aluno.")
+    if tentativa.status != "FINALIZADO":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Finalize a tentativa antes de pedir explicações.")
+
+    pendentes = [r for r in tentativa.respostas if not r.correta and not r.explicacao_ia]
+    if pendentes:
+        try:
+            provedor = obter_provedor()
+            for resposta in pendentes:
+                questao = db.get(Questao, resposta.questao_id)
+                if questao is None:
+                    raise IAIndisponivel("A questão da resposta não está disponível.")
+                correta = next((alt for alt in questao.alternativas if alt.correta), None)
+                escolhida = db.get(Alternativa, resposta.alternativa_id)
+                if correta is None or escolhida is None:
+                    raise IAIndisponivel("As alternativas da questão não estão disponíveis.")
+                contexto = ContextoExplicacao(
+                    materia=questao.assunto.materia.nome,
+                    assunto=questao.assunto.nome,
+                    enunciado=questao.enunciado,
+                    alternativas=tuple(alt.texto for alt in questao.alternativas),
+                    resposta_aluno=escolhida.texto,
+                    resposta_correta=correta.texto,
+                )
+                explicacao = provedor.explicar(contexto)
+                if not explicacao or not explicacao.strip():
+                    raise IAIndisponivel("O provedor não retornou uma explicação válida.")
+                resposta.explicacao_ia = explicacao.strip()
+            db.commit()
+        except IAIndisponivel as exc:
+            db.rollback()
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+        except Exception:
+            db.rollback()
+            # Falhas de provedores externos não revelam tokens ou detalhes internos.
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "Não foi possível gerar explicações no momento. A correção continua disponível.",
+            ) from None
+
+    return FinalizarOut(
+        tentativa=TentativaOut.model_validate(tentativa),
+        respostas=[RespostaCorrigidaOut.model_validate(r) for r in tentativa.respostas],
+    )

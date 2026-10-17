@@ -1,5 +1,8 @@
 """Rotas de questões e alternativas — história #3.
 
+A leitura do banco administrativo exige perfil ADMINISTRADOR, pois revela
+o gabarito. Alunos recebem alternativas sem gabarito via /tentativas/{id}/questoes.
+
 Regra de negócio central (CT04): toda questão deve ter de 2 a 5 alternativas
 e EXATAMENTE UMA correta. Sem isso o simulado não pode ser corrigido de
 forma confiável. A validação acontece aqui no backend, porque depender só
@@ -9,7 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_user, require_admin
+from app.services.integridade import questao_usada_em_simulado, questao_com_tentativas
+from app.deps import require_admin
 from app.models import Alternativa, Assunto, Questao
 from app.schemas import QuestaoIn, QuestaoOut, QuestaoUpdate
 
@@ -60,7 +64,7 @@ def criar_questao(
 def listar_questoes(
     assunto_id: int | None = None,
     db: Session = Depends(get_db),
-    _user=Depends(get_current_user),
+    _admin=Depends(require_admin),
 ):
     query = db.query(Questao)
     if assunto_id is not None:
@@ -72,7 +76,7 @@ def listar_questoes(
 def obter_questao(
     questao_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(get_current_user),
+    _admin=Depends(require_admin),
 ):
     return _obter_ou_404(db, questao_id)
 
@@ -85,6 +89,12 @@ def atualizar_questao(
     _admin=Depends(require_admin),
 ):
     questao = _obter_ou_404(db, questao_id)
+    if questao_com_tentativas(db, questao_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Questão com tentativas registradas não pode ser alterada. Crie uma nova questão.")
+    if dados.assunto_id is not None:
+        if db.get(Assunto, dados.assunto_id) is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Assunto não encontrado.")
+        questao.assunto_id = dados.assunto_id
     if dados.enunciado is not None:
         questao.enunciado = dados.enunciado
     if dados.nivel_dificuldade is not None:
@@ -107,5 +117,7 @@ def remover_questao(
     _admin=Depends(require_admin),
 ):
     questao = _obter_ou_404(db, questao_id)
+    if questao_usada_em_simulado(db, questao_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "A questão faz parte de um simulado. Remova-a dos simulados antes de excluí-la.")
     db.delete(questao)
     db.commit()

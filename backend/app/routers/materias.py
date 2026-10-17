@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.services.integridade import materia_usada_em_simulado
 from app.deps import get_current_user, require_admin
 from app.models import Materia
 from app.schemas import MateriaDetalheOut, MateriaIn, MateriaOut
@@ -80,5 +81,7 @@ def remover_materia(
     _admin=Depends(require_admin),
 ):
     materia = _obter_ou_404(db, materia_id)
+    if materia_usada_em_simulado(db, materia_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Matéria contém questões vinculadas a simulados. Remova os vínculos antes de excluí-la.")
     db.delete(materia)  # assuntos pendentes caem junto (ON DELETE CASCADE, E3)
     db.commit()

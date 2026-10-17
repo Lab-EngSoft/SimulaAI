@@ -6,8 +6,11 @@ Documentação automática: http://localhost:8000/docs
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()
 
 from app.database import Base, engine
 from app.routers import assuntos, auth, dashboard, materias, questoes, simulados, tentativas
@@ -18,7 +21,8 @@ from app.seed import seed_inicial
 async def lifespan(_: FastAPI):
     # Cria as tabelas (se não existirem) e semeia dados de demonstração.
     Base.metadata.create_all(bind=engine)
-    seed_inicial()
+    if os.getenv("APP_ENV", "development").lower() != "production" or os.getenv("SEED_DEMO_DATA") == "1":
+        seed_inicial()
     yield
 
 
@@ -31,7 +35,7 @@ app = FastAPI(
 
 _origens = [
     o.strip()
-    for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+    for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
     if o.strip()
 ]
 app.add_middleware(

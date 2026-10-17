@@ -1,34 +1,37 @@
 # Ata de Retrospectiva — Sprint 1 — SimulaAI
 
 **Data:** 02/10/2026  
-**Presentes:** participação a confirmar antes da entrega — equipe prevista: Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (2840482421006) — Vinicius Brasileiro Veras (2840482421021) — Cesar Augusto Saraiva Fifolato (2840482421022)
+**Presentes:** [preencher somente com quem realmente participou]
 
 ## 1. Ações da retrospectiva anterior — foram aplicadas?
 
 | Ação decidida | Aplicada? | Evidência/comentário |
 |---|---|---|
-| Não se aplica | — | Não foi localizada ata de retrospectiva de sprint anterior no repositório. |
+| Não se aplica | — | Esta foi a primeira retrospectiva registrada do projeto. |
 
 ## 2. O que funcionou bem
 
-- O backlog separa com clareza as histórias Must da Sprint 1: autenticação por perfil, matérias/assuntos e questões/alternativas.
-- O roteiro do protótipo no Figma serviu como referência para organizar o fluxo e a interface administrativa.
-- A base React + TypeScript foi criada com tela de login, dashboard administrativo e operações locais de conteúdo.
-- A compilação de produção e a análise estática concluíram sem erros (`npm run build` e `npm run lint`).
+- O backlog permitiu separar as principais funcionalidades previstas para o início do desenvolvimento.
+- O protótipo no Figma serviu como referência para a estrutura inicial da interface.
+- O front-end inicial foi desenvolvido em React + TypeScript.
+- Foram criadas telas e estruturas iniciais da aplicação.
+- As responsabilidades gerais da equipe foram definidas para orientar o desenvolvimento.
 
-## 3. O que não funcionou
+## 3. O que não funcionou bem
 
-- A autenticação e o CRUD ainda usam somente dados em memória; não há API FastAPI, persistência PostgreSQL ou autorização real.
-- Ainda não existe suíte automatizada, CI ou evidência de teste manual em navegador para os critérios de aceite.
-- As alterações da Sprint 1 ainda precisam ser organizadas em commits e PRs individuais para permitir rastreabilidade da contribuição da equipe.
-- Presenças e participação nos rituais não foram registradas no repositório durante a sprint.
+- O front-end ainda utilizava dados locais, sem integração completa com backend e banco de dados.
+- Ainda não havia uma rotina consolidada de testes automatizados e evidências de execução.
+- As contribuições individuais não estavam bem distribuídas em commits pequenos e Pull Requests.
+- Parte do desenvolvimento foi concentrada em commits grandes, dificultando a rastreabilidade das alterações.
+- A participação e os rituais da equipe não estavam sendo registrados de forma consistente.
 
 ## 4. Ações para a próxima sprint
 
 | Ação | Responsável |
 |---|---|
-| Criar commits pequenos e uma PR revisável para cada frente de trabalho antes de encerrar a sprint. | Toda a equipe; acompanhamento de Davi (Scrum Master) |
-| Definir contrato das rotas de simulados, tentativas, respostas e correção para integrar frontend e FastAPI. | Gabriel (PO/Backend) e Vinicius (Backend) |
-| Substituir os dados locais do fluxo do aluno por serviços de API, mantendo estados de carregamento e erro na interface. | Cesar (Front-End), com apoio do backend |
-| Criar testes de interface para validações e registrar execução no CI. | Cesar (Front-End) e Davi (Qualidade/SM) |
-| Registrar presença, Sprint Review, retrospectiva e revisões de PR no encerramento da Sprint 2. | Toda a equipe; acompanhamento de Davi (Scrum Master) |
+| Melhorar a organização de commits e Pull Requests, evitando concentrar muitas alterações em um único commit. | Toda a equipe |
+| Avançar na implementação do backend, autenticação, CRUDs e fluxo de simulados. | Gabriel e Vinicius |
+| Reorganizar a estrutura do projeto para separar melhor frontend, backend, documentação e banco de dados. | Gabriel |
+| Executar e registrar testes das funcionalidades implementadas. | Gabriel e Vinicius |
+| Acompanhar o andamento da sprint, organização das tarefas e realização dos rituais. | Davi (Scrum Master) |
+| Registrar participação em Sprint Review, retrospectiva e revisões de PR. | Davi (Scrum Master) e equipe |

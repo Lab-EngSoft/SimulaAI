@@ -166,12 +166,7 @@ def test_ct07_finalizar_calcula_acertos_erros_e_percentual(client, aluno_headers
 
 def test_ct08_finalizar_funciona_sem_servico_de_ia(client, aluno_headers, monkeypatch):
     """CT08: sem nenhuma API de IA configurada, a correção objetiva é concluída
-    e o resultado é entregue normalmente (critério de aceite da história #6).
-
-    Atualizado na Sprint 3 (história #7): a correção continua independente da
-    IA, e a resposta ERRADA sai com a explicação do fallback determinístico —
-    a correta continua sem explicação.
-    """
+    e o resultado é entregue normalmente (critério de aceite da história #6)."""
     monkeypatch.delenv("AI_API_KEY", raising=False)  # garante: nenhuma IA configurada
     simulado_id = _simulado_id(client, aluno_headers)
     tentativa = client.post(
@@ -189,10 +184,7 @@ def test_ct08_finalizar_funciona_sem_servico_de_ia(client, aluno_headers, monkey
     corpo = final.json()
     assert corpo["tentativa"]["status"] == "FINALIZADO"
     assert corpo["tentativa"]["acertos"] + corpo["tentativa"]["erros"] == 1
-    erradas = [r for r in corpo["respostas"] if not r["correta"]]
-    corretas = [r for r in corpo["respostas"] if r["correta"]]
-    assert all(r["explicacao_ia"] for r in erradas)  # fallback da história #7
-    assert all(r["explicacao_ia"] is None for r in corretas)
+    assert all(r["explicacao_ia"] is None for r in corpo["respostas"])
 
 
 def test_finalizar_sem_respostas_zera_o_resultado(client, aluno_headers):

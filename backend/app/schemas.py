@@ -8,7 +8,7 @@ Regra da casa: nada chega no banco sem passar por um schema aqui. É a
 """
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 # ---------- Autenticação (história #1) ----------
@@ -99,6 +99,7 @@ class QuestaoIn(BaseModel):
 
 class QuestaoUpdate(BaseModel):
     """PUT parcial: só os campos enviados são alterados."""
+    assunto_id: int | None = None
     enunciado: str | None = Field(default=None, min_length=1)
     nivel_dificuldade: str | None = Field(default=None, max_length=30)
     alternativas: list[AlternativaIn] | None = Field(default=None, min_length=2, max_length=5)
@@ -121,6 +122,26 @@ class SimuladoOut(BaseModel):
     titulo: str
     descricao: str | None
     total_questoes: int
+
+
+class SimuladoIn(BaseModel):
+    """Questões são identificadas e ordenadas por questao_ids (sem gabarito no payload)."""
+    titulo: str = Field(min_length=3, max_length=150)
+    descricao: str | None = None
+    questao_ids: list[int] = Field(min_length=1, max_length=200)
+
+    @field_validator("titulo")
+    @classmethod
+    def validar_titulo(cls, value: str) -> str:
+        titulo = value.strip()
+        if len(titulo) < 3:
+            raise ValueError("O título deve ter pelo menos 3 caracteres não vazios.")
+        return titulo
+
+
+class SimuladoDetalheOut(SimuladoOut):
+    questao_ids: list[int]
+    total_tentativas: int
 
 
 class TentativaIn(BaseModel):
@@ -176,18 +197,11 @@ class FinalizarOut(BaseModel):
     respostas: list[RespostaCorrigidaOut]
 
 
-# ---------- Explicação da IA (história #7, Sprint 3) ----------
+# ---------- IA (história #7 — status para o frontend) ----------
 
-class ExplicacaoOut(BaseModel):
-    """Explicação do tutor para uma questão ERRADA (só após finalizar)."""
-
-    questao_id: int
-    enunciado: str
-    alternativa_escolhida_id: int
-    alternativa_escolhida_texto: str
-    alternativa_correta_id: int
-    alternativa_correta_texto: str
-    explicacao: str
+class IAStatusOut(BaseModel):
+    disponivel: bool
+    descricao: str
 
 
 # ---------- Dashboard do aluno (história #9, Sprint 3) ----------
