@@ -17,7 +17,7 @@ As entregas foram relacionadas às histórias previstas no backlog do projeto, c
 | #6 — Correção automática | Não, prevista na Sprint 2 | Sim, integração concluída | Correção e apresentação dos resultados na interface, independentemente da IA. |
 | #7 — Explicações por IA | Sim | Parcialmente | Estrutura modular e comunicação implementadas, porém geração efetiva comprometida por timeouts da API externa. |
 | #8 — Histórico de tentativas | Sim | Sim | Consulta de tentativas anteriores, resultados e continuidade de simulados em andamento. |
-| #9 — Dashboard de desempenho | Sim | Não concluído nesta contribuição | Resultados individuais estão disponíveis, mas ainda não foi implementado um dashboard completo com desempenho por matéria e assunto. |
+| #9 — Dashboard de desempenho | Sim | Sim, via PR #4 | Endpoint `GET /dashboard` com desempenho por matéria e assunto (agregação com JOIN e GROUP BY no banco), entregue na PR #4 pelo Vinicius após a redação inicial deste relatório — ver "Atualização — dashboard (PR #4)" na seção 2. |
 
 Além das histórias previstas, foram realizadas atividades técnicas complementares:
 
@@ -98,6 +98,10 @@ Dessa forma, não foi possível determinar definitivamente se a causa está rela
 
 A investigação e a busca de uma solução foram previstas para a próxima sprint.
 
+### Atualização — dashboard (PR #4)
+
+Após a redação inicial deste relatório, a PR #4 (Vinicius, backend) concluiu a história #9 com o endpoint `GET /dashboard`: total de tentativas, tentativas finalizadas, acertos, erros, média de aproveitamento e **desempenho por matéria e por assunto**, agregados no banco (JOIN de 4 tabelas + GROUP BY). A mesma PR adicionou o CI (GitHub Actions — pytest a cada push/PR para a main) e os testes CT11/CT12 (histórico de simulados diferentes com isolamento por aluno; dashboard agregado). Com o merge da PR #4, a suíte combinada fecha com **47 testes aprovados**.
+
 ### Execução e demonstração
 
 O sistema pode ser executado localmente utilizando dois servidores:
@@ -136,7 +140,7 @@ Ao final das atividades desenvolvidas nesta sprint, os seguintes estados foram i
 | Realização e finalização de simulados | Integradas |
 | Correção automática | Integrada |
 | Histórico de tentativas | Concluído |
-| Dashboard completo de desempenho | Pendente |
+| Dashboard completo de desempenho | Concluído (PR #4) |
 | Estrutura modular de IA | Concluída |
 | Configuração do provedor NVIDIA | Concluída |
 | Geração efetiva de explicações por IA | Bloqueada por falhas de inferência |
@@ -286,9 +290,7 @@ A funcionalidade deverá ser validada conforme o critério de aceite estabelecid
 
 ### 6.4. Conclusão do dashboard de desempenho
 
-A história #9 permanece pendente de implementação integral.
-
-Será necessário disponibilizar indicadores consolidados de desempenho geral, por matéria e por assunto, utilizando os resultados armazenados no histórico de tentativas.
+**Atualização:** concluída na PR #4 — endpoint `GET /dashboard` com indicadores consolidados de desempenho geral, por matéria e por assunto, validado pelo teste CT12. O consumo desse endpoint pela interface do aluno (gráficos/telas) pode ser refinado na Sprint 4.
 
 ### 6.5. Preparação para o deploy
 

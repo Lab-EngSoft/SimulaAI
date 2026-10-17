@@ -197,8 +197,30 @@ class FinalizarOut(BaseModel):
     respostas: list[RespostaCorrigidaOut]
 
 
-# ---------- IA (contrato preparado para uma próxima sprint) ----------
+# ---------- IA (história #7 — status para o frontend) ----------
 
 class IAStatusOut(BaseModel):
     disponivel: bool
     descricao: str
+
+
+# ---------- Dashboard do aluno (história #9, Sprint 3) ----------
+
+class DesempenhoRotuloOut(BaseModel):
+    """Uma linha agregada de desempenho (por matéria ou por assunto)."""
+
+    rotulo: str
+    respondidas: int
+    acertos: int
+    erros: int
+    percentual: float
+
+
+class DashboardOut(BaseModel):
+    total_tentativas: int
+    tentativas_finalizadas: int
+    total_acertos: int
+    total_erros: int
+    media_aproveitamento: float
+    por_materia: list[DesempenhoRotuloOut] = []
+    por_assunto: list[DesempenhoRotuloOut] = []
