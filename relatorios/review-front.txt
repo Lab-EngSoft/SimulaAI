@@ -1,0 +1,49 @@
+REVISÃO DO FRONTEND — SIMULAAI
+Data: 06/11/2026
+Escopo: análise estática da aplicação React/Vite em frontend/src e dos metadados HTML.
+
+RESUMO
+
+Foram encontrados ajustes concretos de apresentação e responsividade. A raiz do app limitava toda a interface a 1126 px, mesmo com o layout administrativo preparado para telas maiores. Além disso, o tema escuro do sistema alterava as cores globais sem que os componentes do SimulaAI oferecessem um tema escuro consistente. A página também declarava idioma e título genéricos.
+
+Os três pontos foram corrigidos nesta revisão. Não foram alterados fluxos de autenticação, simulados ou comunicação com a API.
+
+ALTERAÇÕES REALIZADAS
+
+1. Média — Largura disponível para a aplicação
+Referência: frontend/src/index.css, seletor #root.
+O limite de 1126 px reduzia a área útil da administração em monitores largos e podia comprimir painéis e tabelas. A raiz agora ocupa a largura disponível; limites específicos de conteúdo continuam definidos nos componentes.
+Estado: corrigido.
+
+2. Baixa — Esquema de cores incompatível com a interface
+Referência: frontend/src/index.css, color-scheme e media query prefers-color-scheme.
+O CSS aplicava cores de tema escuro às variáveis globais quando o sistema operacional estava em modo escuro, enquanto a interface principal usa superfícies e componentes claros. Isso podia produzir contraste inconsistente e controles nativos com aparência divergente. Foi mantido o tema claro, que corresponde ao desenho atual.
+Estado: corrigido. Um tema escuro completo permanece fora do escopo.
+
+3. Baixa — Metadados da página
+Referência: frontend/index.html, atributo lang e title.
+A página informava idioma inglês e título "proj-simulaai", inadequados para o produto em português. Foram definidos pt-BR, título SimulaAI e descrição para mecanismos de busca/compartilhamento.
+Estado: corrigido.
+
+PONTOS DE EVOLUÇÃO
+
+1. Acessibilidade dos diálogos
+Referência: frontend/src/App.tsx, componente Modal.
+Os diálogos informam role="dialog" e aria-modal, mas a revisão estática não identificou tratamento explícito da tecla Escape, contenção/restauração do foco nem associação do título via aria-labelledby. Recomenda-se validar esses comportamentos com teclado e leitor de tela antes de considerar os diálogos totalmente acessíveis.
+
+2. Confirmações e retenção de dados
+Referência: frontend/src/App.tsx, ações de exclusão em SubjectsPage e SimuladosPage.
+O frontend pede confirmação antes de excluir matérias, assuntos ou simulados. A proteção contra exclusão de histórico e a política de retenção precisam ser garantidas também pela API/banco; confirmação visual não substitui autorização e integridade no servidor. Esse risco de cascata já está registrado na revisão da API.
+
+3. Comportamento de rede
+Referência: frontend/src/App.tsx, carregamento de status da IA e conteúdo.
+Os estados de erro são exibidos nas operações principais, mas falhas na consulta opcional de status da IA são convertidas em estado indisponível sem mensagem ao aluno. É aceitável como degradação de uma função opcional, mas convém manter esse estado distinguível de indisponibilidade confirmada pela API.
+
+VALIDAÇÃO
+
+- npm run build: aprovado.
+- npm run lint: concluído; reportou dois avisos react(set-state-in-effect) em App.tsx (linhas 62 e 331), não relacionados a esta revisão.
+
+CONCLUSÃO
+
+Fazia sentido mudar o frontend: havia um limite global que restringia a interface, além de metadados e configuração de tema inconsistentes com o produto atual. Essas correções foram feitas sem alterar os fluxos funcionais. Os itens de evolução acima ficam registrados para priorização posterior, especialmente acessibilidade dos diálogos e proteção de histórico na camada de servidor.
