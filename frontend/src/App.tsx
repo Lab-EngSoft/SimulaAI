@@ -4,6 +4,9 @@ import { ArrowLeft, BookOpen, Check, ChevronRight, ClipboardList, Edit3, Graduat
 import { api, ApiError, sessao } from './api'
 import type { Assunto, Materia, Questao, QuestaoInput, QuestaoJogo, Resultado, Simulado, SimuladoDetalhe, SimuladoInput, IAStatus, Tentativa, Usuario } from './api'
 import './App.css'
+import StudentDashboard from './StudentDashboard'
+import type { Dashboard } from './api'
+
 
 type AdminScreen = 'admin-dashboard' | 'subjects' | 'questions' | 'simulados'
 type Notify = (message: string) => void
@@ -312,7 +315,45 @@ function QuestionModal({ question, subjects, topics, onClose, onSave }: { questi
   return <Modal title={question ? 'Editar questão' : 'Nova questão'} onClose={onClose}><form className="modal-form question-form" onSubmit={submit}><label>Enunciado<textarea autoFocus value={statement} onChange={(e) => setStatement(e.target.value)} rows={3} required/></label><div className="form-grid"><label>Matéria<select value={subjectId} onChange={(e) => changeSubject(Number(e.target.value))}>{subjects.map((s) => <option value={s.id} key={s.id}>{s.nome}</option>)}</select></label><label>Assunto<select value={topicId} required onChange={(e) => setTopicId(Number(e.target.value))}>{availableTopics.length ? availableTopics.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>) : <option value={0}>Cadastre um assunto</option>}</select></label></div><fieldset><legend>Alternativas <span>Marque uma correta (de 2 a 5).</span></legend>{alternatives.map((alternative, index) => <label className="alternative-input" key={index}><input type="radio" name="correct" checked={correctIndex === index} onChange={() => setCorrectIndex(index)} aria-label={`Alternativa ${index + 1} correta`}/><span>{String.fromCharCode(65 + index)}</span><input required value={alternative} onChange={(e) => updateAlternative(index, e.target.value)} placeholder={`Alternativa ${index + 1}`}/></label>)}<div className="alternative-buttons"><button type="button" className="button ghost" disabled={alternatives.length >= 5} onClick={() => setAlternatives([...alternatives, ''])}>+ Alternativa</button><button type="button" className="button ghost" disabled={alternatives.length <= 2} onClick={() => { setAlternatives(alternatives.slice(0, -1)); setCorrectIndex(Math.min(correctIndex, alternatives.length - 2)) }}>− Alternativa</button></div></fieldset><label>Dificuldade<select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="">Não definida</option><option>Fácil</option><option>Médio</option><option>Difícil</option></select></label>{error && <p className="form-error">{error}</p>}<div className="modal-actions"><button className="button ghost" type="button" onClick={onClose}>Cancelar</button><button className="button primary" type="submit" disabled={busy}>{busy ? 'Salvando...' : question ? 'Salvar alterações' : 'Cadastrar questão'}</button></div></form></Modal>
 }
 
+
+/** Exibe a explicação pedagógica sem inserir HTML externo. */
+function ExplicacaoPedagogica({ texto }: { texto: string }) {
+  return (
+    <div
+      className="ai-explanation"
+      aria-label="Explicação pedagógica gerada por IA"
+    >
+      {texto.split(/\r?\n/).map((line, index) => {
+        const trecho = line.trim()
+
+        if (!trecho) return null
+
+        const titulo = trecho.match(/^\*\*(.*?)\*\*:?$/)
+
+        return titulo ? (
+          <h4 key={index}>{titulo[1]}</h4>
+        ) : (
+          <p key={index}>
+            {trecho.replace(/\*\*(.*?)\*\*/g, '$1')}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+
 function StudentArea({ user, onLogout }: { user: Usuario; onLogout: () => void }) {
+
+  const [studentView, setStudentView] = useState<
+    'simulados' | 'desempenho'
+  >('simulados')
+
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null)
+  const [dashboardLoading, setDashboardLoading] = useState(false)
+  const [dashboardError, setDashboardError] = useState('')
+  const [dashboardRefresh, setDashboardRefresh] = useState(0)
+
   const [simulados, setSimulados] = useState<Simulado[]>([])
   const [history, setHistory] = useState<Tentativa[]>([])
   const [active, setActive] = useState<Tentativa | null>(null)
@@ -330,9 +371,42 @@ function StudentArea({ user, onLogout }: { user: Usuario; onLogout: () => void }
 
   useEffect(() => { void refresh().catch((err: unknown) => setError(errorMessage(err))); void api.iaStatus().then(setIaStatus).catch(() => setIaStatus(null)) }, [refresh])
 
+
+  useEffect(() => {
+    if (active || studentView !== 'desempenho') return
+
+    let mounted = true
+
+    setDashboardLoading(true)
+    setDashboardError('')
+
+    void api.dashboard()
+      .then((dados) => {
+        if (mounted) setDashboard(dados)
+      })
+      .catch((err: unknown) => {
+        if (!mounted) return
+
+        if (err instanceof ApiError && err.status === 401) {
+          onLogout()
+        } else {
+          setDashboardError(errorMessage(err))
+        }
+      })
+      .finally(() => {
+        if (mounted) setDashboardLoading(false)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [active, studentView, dashboardRefresh])
+
+
   const act = async (work: () => Promise<void>) => {
     setError('')
     setNotice('')
+    
     setBusy(true)
     try { await work() }
     catch (err) { if (err instanceof ApiError && err.status === 401) onLogout(); else setError(errorMessage(err)) }
@@ -355,14 +429,32 @@ function StudentArea({ user, onLogout }: { user: Usuario; onLogout: () => void }
       setGameQuestions(list); setActive(corrected.tentativa); setResult(corrected)
     })
   }
+  
+
   const generateExplanations = async () => {
     if (!active) return
+
     await act(async () => {
-      const corrected = await api.gerarExplicacoes(active.id)
-      setResult(corrected)
-      setNotice('Explicações pedagógicas registradas.')
+      try {
+        const corrected = await api.gerarExplicacoes(active.id)
+
+        setResult(corrected)
+        setNotice('Explicações pedagógicas registradas.')
+      } catch (erro) {
+        // Recupera explicações salvas antes da falha.
+        const parcial = await api.resultado(active.id)
+          .catch(() => null)
+
+        if (parcial) {
+          setResult(parcial)
+        }
+
+        throw erro
+      }
     })
   }
+
+
   const answer = async (question: QuestaoJogo, alternativeId: number) => {
     if (!active) return
     await act(async () => {
@@ -386,13 +478,168 @@ function StudentArea({ user, onLogout }: { user: Usuario; onLogout: () => void }
   return <main className="student-preview student-area">
     <header><Brand/><div className="student-user"><span>Olá, {user.nome.split(' ')[0]}</span><button className="button ghost" onClick={onLogout}><LogOut size={17}/> Sair</button></div></header>
     <section className="student-content">
-      <div className="student-heading"><span className="eyebrow">ÁREA DO ALUNO</span><h1>{active ? activeName : 'Seus simulados'}</h1><p>{active ? 'Suas respostas são registradas no servidor.' : 'Escolha um simulado, continue uma tentativa ou consulte seu desempenho.'}</p></div>
+      <div className="student-heading"><span className="eyebrow">ÁREA DO ALUNO</span>
+<h1>
+  {active
+    ? activeName
+    : studentView === 'desempenho'
+      ? 'Meu desempenho'
+      : 'Seus simulados'}
+</h1>
+<p>{active ? 'Suas respostas são registradas no servidor.' : 'Escolha um simulado, continue uma tentativa ou consulte seu desempenho.'}</p></div>
       {error && <div className="api-banner error" role="alert">{error}</div>}
       {notice && <div className="api-banner" role="status">{notice}</div>}
+
+      {!active && (
+        <nav
+          className="student-dashboard-navigation"
+          aria-label="Navegação da área do aluno"
+        >
+          <button
+            className="button ghost"
+            aria-current={
+              studentView === 'simulados' ? 'page' : undefined
+            }
+            onClick={() => setStudentView('simulados')}
+          >
+            <ClipboardList size={17} />
+            Simulados e histórico
+          </button>
+
+          <button
+            className="button ghost"
+            aria-current={
+              studentView === 'desempenho' ? 'page' : undefined
+            }
+            onClick={() => setStudentView('desempenho')}
+          >
+            <LayoutDashboard size={17} />
+            Meu desempenho
+          </button>
+        </nav>
+      )}
+
       {active ? <div className="student-workspace">
-        {result ? <article className="panel result-panel"><h2>Simulado finalizado!</h2><p className="result-score">{Number(result.tentativa.percentual_aproveitamento).toFixed(1)}%</p><p>{result.tentativa.acertos} acertos · {result.tentativa.erros} erros · {gameQuestions.length - result.tentativa.acertos - result.tentativa.erros} sem resposta</p><h3>Correção das suas respostas</h3>{gameQuestions.map((q, index) => { const answer = result.respostas.find((r) => r.questao_id === q.id); return <div key={q.id} className="result-row"><strong>{index + 1}. {q.enunciado}</strong><span className={answer?.correta ? 'correct' : 'incorrect'}>{!answer ? 'Não respondida' : answer.correta ? 'Correta' : 'Incorreta'}</span>{answer?.explicacao_ia && <p>{answer.explicacao_ia}</p>}</div> })}{result.respostas.some((r) => !r.correta && !r.explicacao_ia) && <div className="ai-placeholder"><Sparkles size={19}/><div><strong>Explicações pedagógicas com IA</strong><p>{iaStatus?.descricao ?? 'A integração com IA está sendo preparada.'}</p></div>{iaStatus?.disponivel && <button className="button secondary" disabled={busy} onClick={() => void generateExplanations()}>Gerar explicações</button>}</div>}<button className="button primary" onClick={goBack}>Voltar aos simulados</button></article>
-        : <><div className="student-toolbar"><button className="button ghost" onClick={goBack}><ArrowLeft size={17}/> Voltar</button><strong>{answered}/{gameQuestions.length} respondidas</strong></div>{gameQuestions.map((q, index) => <article key={q.id} className="panel quiz-card"><h2>Questão {index + 1} <span className="count-badge">{q.nivel_dificuldade ?? 'Geral'}</span></h2><p>{q.enunciado}</p><div className="quiz-options">{q.alternativas.map((a, i) => <label key={a.id} className={q.respondida_alternativa_id === a.id ? 'chosen' : ''}><input type="radio" name={`question-${q.id}`} disabled={busy} checked={q.respondida_alternativa_id === a.id} onChange={() => void answer(q, a.id)}/><span>{String.fromCharCode(65 + i)}.</span>{a.texto}</label>)}</div></article>)}<div className="student-toolbar"><span>As questões não respondidas reduzem o aproveitamento.</span><button className="button primary" disabled={busy} onClick={() => void finish()}>Finalizar simulado</button></div></>}
-      </div> : <div className="student-workspace"><div className="student-section-heading"><h2>Simulados disponíveis</h2><p>{simulados.length} disponível(is)</p></div><div className="simulado-grid">{simulados.map((s) => <article className="panel" key={s.id}><ClipboardList size={30}/><h3>{s.titulo}</h3><p>{s.descricao ?? 'Avaliação objetiva'}</p><span>{s.total_questoes} questões</span><button disabled={busy || s.total_questoes === 0} className="button primary" onClick={() => void start(s)}>Iniciar simulado <ChevronRight size={17}/></button></article>)}{!simulados.length && <p>Nenhum simulado disponível. Peça ao administrador para cadastrá-los.</p>}</div><div className="student-section-heading"><h2>Meu histórico</h2><p>{history.length} tentativa(s)</p></div><div className="panel"><div className="history-list">{history.map((attempt) => <div className="history-row" key={attempt.id}><span><strong>{simulados.find((s) => s.id === attempt.simulado_id)?.titulo ?? `Simulado #${attempt.simulado_id}`}</strong><small>{new Date(attempt.data_inicio).toLocaleString('pt-BR')}</small></span><span>{attempt.status === 'FINALIZADO' ? `${Number(attempt.percentual_aproveitamento).toFixed(1)}% · ${attempt.acertos} acertos` : 'Em andamento'}</span>{attempt.status === 'EM_ANDAMENTO' ? <button className="button secondary" disabled={busy} onClick={() => void openAttempt(attempt)}>Continuar</button> : <button className="button secondary" disabled={busy} onClick={() => void viewResult(attempt)}>Ver resultado</button>}</div>)}{!history.length && <p>Você ainda não iniciou nenhum simulado.</p>}</div></div></div>}
+        {result ? (
+          <article className="panel result-panel">
+            <h2>Simulado finalizado!</h2>
+            <p className="result-score">
+              {Number(result.tentativa.percentual_aproveitamento).toFixed(1)}%
+            </p>
+            <p>
+              {result.tentativa.acertos} acertos · {result.tentativa.erros} erros ·{' '}
+              {gameQuestions.length - result.tentativa.acertos - result.tentativa.erros} sem resposta
+            </p>
+
+            <h3>Correção das suas respostas</h3>
+            {gameQuestions.map((q, index) => {
+              const resposta = result.respostas.find((r) => r.questao_id === q.id)
+              const alternativaCorretaId = result.gabarito?.find(
+                (g) => g.questao_id === q.id
+              )?.alternativa_correta_id
+
+              return (
+                <div key={q.id} className="result-row result-row-detailed">
+                  <div className="result-question-head">
+                    <strong>{index + 1}. {q.enunciado}</strong>
+                    <span className={
+                      !resposta ? 'unanswered' : resposta.correta ? 'correct' : 'incorrect'
+                    }>
+                      {!resposta ? 'Não respondida' : resposta.correta ? 'Correta' : 'Incorreta'}
+                    </span>
+                  </div>
+
+                  {alternativaCorretaId === undefined && (
+                    <p role="alert">Gabarito indisponível. Verifique a versão do backend.</p>
+                  )}
+
+                  <div className="result-choices">
+                    {q.alternativas.map((alternativa, letra) => {
+                      const correta = alternativa.id === alternativaCorretaId
+                      const marcada = alternativa.id === resposta?.alternativa_id
+
+                      return (
+                        <div
+                          key={alternativa.id}
+                          className={`result-choice ${correta ? 'is-correct' : marcada ? 'is-incorrect' : ''}`}
+                        >
+                          <span>{String.fromCharCode(65 + letra)}.</span>
+                          <span>{alternativa.texto}</span>
+                          {correta && <strong>Resposta correta</strong>}
+                          {marcada && <em>Sua resposta</em>}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {resposta?.explicacao_ia && (
+                    <ExplicacaoPedagogica texto={resposta.explicacao_ia} />
+                  )}
+                </div>
+              )
+            })}
+
+            {result.respostas.some((r) => !r.correta && !r.explicacao_ia) && (
+              <div className="ai-placeholder">
+                <Sparkles size={19} />
+                <div>
+                  <strong>Explicações pedagógicas com IA</strong>
+                  <p>{iaStatus?.descricao ?? 'A integração com IA está sendo preparada.'}</p>
+                </div>
+                {(
+                  <button
+                    className="button secondary"
+                    disabled={busy}
+                    onClick={() => void generateExplanations()}
+                  >
+                    {busy ? 'Gerando explicações...' : 'Gerar explicações'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            <button className="button primary" onClick={goBack}>
+              Voltar aos simulados
+            </button>
+          </article>
+        ) : <><div className="student-toolbar"><button className="button ghost" onClick={goBack}><ArrowLeft size={17}/> Voltar</button><strong>{answered}/{gameQuestions.length} respondidas</strong></div>{gameQuestions.map((q, index) => <article key={q.id} className="panel quiz-card"><h2>Questão {index + 1} <span className="count-badge">{q.nivel_dificuldade ?? 'Geral'}</span></h2><p>{q.enunciado}</p><div className="quiz-options">{q.alternativas.map((a, i) => <label key={a.id} className={q.respondida_alternativa_id === a.id ? 'chosen' : ''}><input type="radio" name={`question-${q.id}`} disabled={busy} checked={q.respondida_alternativa_id === a.id} onChange={() => void answer(q, a.id)}/><span>{String.fromCharCode(65 + i)}.</span>{a.texto}</label>)}</div></article>)}<div className="student-toolbar"><span>As questões não respondidas reduzem o aproveitamento.</span><button className="button primary" disabled={busy} onClick={() => void finish()}>Finalizar simulado</button></div></>}
+      
+</div> : studentView === 'desempenho' ? (
+  <div className="student-dashboard-page">
+    <div className="student-dashboard-toolbar">
+      <h2>Meu desempenho</h2>
+
+      <button
+        type="button"
+        className="button secondary"
+        disabled={dashboardLoading}
+        onClick={() => setDashboardRefresh((value) => value + 1)}
+      >
+        Atualizar dados
+      </button>
+    </div>
+
+    {dashboardError && (
+      <div className="api-banner error" role="alert">
+        Não foi possível carregar o desempenho:
+        {' '}{dashboardError}
+      </div>
+    )}
+
+    {dashboardLoading ? (
+      <p className="content-loading" role="status">
+        Carregando desempenho...
+      </p>
+    ) : !dashboardError && dashboard ? (
+      <StudentDashboard
+        dados={dashboard}
+        historico={history}
+        simulados={simulados}
+      />
+    ) : null}
+  </div>
+) : <div className="student-workspace">
+<div className="student-section-heading"><h2>Simulados disponíveis</h2><p>{simulados.length} disponível(is)</p></div><div className="simulado-grid">{simulados.map((s) => <article className="panel" key={s.id}><ClipboardList size={30}/><h3>{s.titulo}</h3><p>{s.descricao ?? 'Avaliação objetiva'}</p><span>{s.total_questoes} questões</span><button disabled={busy || s.total_questoes === 0} className="button primary" onClick={() => void start(s)}>Iniciar simulado <ChevronRight size={17}/></button></article>)}{!simulados.length && <p>Nenhum simulado disponível. Peça ao administrador para cadastrá-los.</p>}</div><div className="student-section-heading"><h2>Meu histórico</h2><p>{history.length} tentativa(s)</p></div><div className="panel"><div className="history-list">{history.map((attempt) => <div className="history-row" key={attempt.id}><span><strong>{simulados.find((s) => s.id === attempt.simulado_id)?.titulo ?? `Simulado #${attempt.simulado_id}`}</strong><small>{new Date(attempt.data_inicio).toLocaleString('pt-BR')}</small></span><span>{attempt.status === 'FINALIZADO' ? `${Number(attempt.percentual_aproveitamento).toFixed(1)}% · ${attempt.acertos} acertos` : 'Em andamento'}</span>{attempt.status === 'EM_ANDAMENTO' ? <button className="button secondary" disabled={busy} onClick={() => void openAttempt(attempt)}>Continuar</button> : <button className="button secondary" disabled={busy} onClick={() => void viewResult(attempt)}>Ver resultado</button>}</div>)}{!history.length && <p>Você ainda não iniciou nenhum simulado.</p>}</div></div></div>}
     </section>
   </main>
 }

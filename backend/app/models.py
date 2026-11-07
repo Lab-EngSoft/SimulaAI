@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -35,6 +36,49 @@ simulado_questao = Table(
     Column("questao_id", Integer, ForeignKey("questao.id", ondelete="CASCADE"), primary_key=True),
     Column("ordem", Integer, nullable=False),
 )
+
+
+class ExplicacaoCache(Base):
+    """Explicações reutilizáveis entre alunos."""
+
+    __tablename__ = "explicacao_cache"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "assinatura",
+            name="uq_explicacao_cache_assinatura",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True)
+
+    questao_id = Column(
+        Integer,
+        ForeignKey("questao.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    alternativa_id = Column(
+        Integer,
+        ForeignKey("alternativa.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    assinatura = Column(String(64), nullable=False)
+    modelo = Column(String(160), nullable=False)
+    texto = Column(Text, nullable=False)
+
+    criado_em = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=agora_utc,
+    )
+
+    questao = relationship(
+        "Questao",
+        back_populates="explicacoes_cache",
+    )
 
 
 class Usuario(Base):
@@ -95,6 +139,12 @@ class Questao(Base):
     simulados = relationship(
         "Simulado", secondary=simulado_questao, back_populates="questoes"
     )
+    explicacoes_cache = relationship(
+    "ExplicacaoCache",
+    back_populates="questao",
+    cascade="all, delete-orphan",
+)
+
 
 
 class Alternativa(Base):

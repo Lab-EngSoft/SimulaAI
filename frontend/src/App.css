@@ -35,3 +35,135 @@
 .metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1060px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.metric-grid{grid-template-columns:1fr}}
+
+
+/* Explicações pedagógicas geradas por IA */
+.ai-explanation {
+  background: #f7f9ff;
+  border-left: 3px solid #6475d8;
+  border-radius: 5px;
+  padding: 13px 16px;
+  margin-top: 10px;
+  text-align: left;
+  white-space: normal;
+}
+
+.ai-explanation h4 {
+  font-size: 13px;
+  color: #293d74;
+  margin: 13px 0 6px;
+}
+
+.ai-explanation h4:first-child {
+  margin-top: 0;
+}
+
+.ai-explanation p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #52607c;
+  margin: 0 0 7px;
+  white-space: pre-wrap;
+}
+
+
+/* Corrige o botão Sair no cabeçalho do aluno */
+.student-user .button.ghost {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #6676a2;
+}
+
+.student-user .button.ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+}
+
+.student-user .button.ghost:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+
+/* Correção pedagógica */
+.result-row.result-row-detailed {
+  display: block;
+  text-align: left;
+}
+
+.result-question-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.result-question-head strong {
+  flex: 1;
+}
+
+.result-question-head .unanswered {
+  color: #7f879a;
+}
+
+.result-choices {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.result-choice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid #e2e6ee;
+  border-radius: 8px;
+  color: #384763;
+  background: #f9fafe;
+}
+
+.result-choice > span:first-child {
+  font-weight: 750;
+  min-width: 24px;
+}
+
+.result-choice > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-choice.is-correct {
+  border-color: #8dd3b4;
+  background: #edf9f2;
+}
+
+.result-choice.is-incorrect {
+  border-color: #f1a7ae;
+  background: #fff1f3;
+}
+
+.result-choice strong,
+.result-choice em {
+  font-size: 11px;
+  font-style: normal;
+}
+
+.result-choice.is-correct strong {
+  color: #13784f;
+}
+
+.result-choice.is-incorrect em {
+  color: #aa4052;
+}
+
+@media (max-width: 620px) {
+  .result-choice {
+    flex-wrap: wrap;
+  }
+
+  .result-choice > span:nth-child(2) {
+    flex-basis: calc(100% - 45px);
+  }
+}

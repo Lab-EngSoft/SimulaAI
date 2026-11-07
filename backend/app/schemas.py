@@ -192,6 +192,17 @@ class RespostaCorrigidaOut(BaseModel):
     explicacao_ia: str | None
 
 
+class GabaritoQuestaoOut(BaseModel):
+    questao_id: int
+    alternativa_correta_id: int
+
+
+class FinalizarOut(BaseModel):
+    tentativa: TentativaOut
+    respostas: list[RespostaCorrigidaOut]
+    gabarito: list[GabaritoQuestaoOut]
+
+
 class FinalizarOut(BaseModel):
     tentativa: TentativaOut
     respostas: list[RespostaCorrigidaOut]
@@ -224,25 +235,3 @@ class DashboardOut(BaseModel):
     media_aproveitamento: float
     por_materia: list[DesempenhoRotuloOut] = []
     por_assunto: list[DesempenhoRotuloOut] = []
-
-
-# ---------- Evolução entre tentativas (história #10, Sprint 4) ----------
-
-class EvolucaoItemOut(BaseModel):
-    """Um ponto da linha do tempo de desempenho do aluno."""
-
-    tentativa_id: int
-    simulado_id: int
-    simulado_titulo: str
-    data_fim: datetime
-    acertos: int
-    erros: int
-    percentual: float
-    variacao_vs_anterior: float | None = None  # pontos percentuais; None na 1ª
-
-
-class EvolucaoOut(BaseModel):
-    total_finalizadas: int
-    itens: list[EvolucaoItemOut] = []
-    variacao_total: float | None = None  # último percentual − primeiro
-    tendencia: str  # "melhorando" | "estavel" | "piorando" | "sem_dados"

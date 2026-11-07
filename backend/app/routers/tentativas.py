@@ -40,6 +40,17 @@ from app.schemas import (
     RespostaIn,
     TentativaIn,
     TentativaOut,
+    GabaritoQuestaoOut,
+)
+
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
+from app.models import ExplicacaoCache
+
+from app.services.cache_explicacoes import (
+    assinatura_explicacao,
+    modelo_atual,
 )
 
 router = APIRouter(prefix="/tentativas", tags=["Simulados do aluno"])
@@ -72,15 +83,56 @@ def _questao_pertence_ao_simulado(db: Session, simulado_id: int, questao_id: int
     return linha is not None
 
 
+def _resultado_com_gabarito(tentativa: Tentativa) -> FinalizarOut:
+    """Monta a correção completa após a finalização."""
+    gabarito = []
+
+    for questao in tentativa.simulado.questoes:
+        correta = next(
+            (a for a in questao.alternativas if a.correta),
+            None,
+        )
+
+        if correta is None:
+            raise HTTPException(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "Há uma questão sem alternativa correta cadastrada.",
+            )
+
+        gabarito.append(
+            GabaritoQuestaoOut(
+                questao_id=questao.id,
+                alternativa_correta_id=correta.id,
+            )
+        )
+
+    return FinalizarOut(
+        tentativa=TentativaOut.model_validate(tentativa),
+        respostas=[
+            RespostaCorrigidaOut.model_validate(r)
+            for r in tentativa.respostas
+        ],
+        gabarito=gabarito,
+    )
+
+
 @router.get("/ia/status", response_model=IAStatusOut)
 def verificar_ia(_usuario=Depends(get_current_user)):
-    """Sinalização para o frontend; não inicia nenhuma chamada externa."""
+    """Sinalização para o frontend; não inicia chamada externa."""
+
     disponivel = status_ia()
+
     return IAStatusOut(
         disponivel=disponivel,
-        descricao="Explicações com IA disponíveis." if disponivel
-        else "Explicações com IA serão implementadas em uma próxima sprint.",
+        descricao=(
+            "IA configurada. A conexão será verificada "
+            "ao gerar explicações."
+            if disponivel
+            else "Configure META_API_KEY no backend "
+                 "para habilitar explicações."
+        ),
     )
+
 
 
 @router.post("", response_model=TentativaOut, status_code=status.HTTP_201_CREATED)
@@ -251,10 +303,7 @@ def finalizar(
     db.refresh(tentativa)
 
     # explicacao_ia permanece NULL até a Sprint 3 (história #7).
-    return FinalizarOut(
-        tentativa=TentativaOut.model_validate(tentativa),
-        respostas=[RespostaCorrigidaOut.model_validate(r) for r in respostas],
-    )
+    return _resultado_com_gabarito(tentativa)
 
 
 @router.get("/{tentativa_id}/resultado", response_model=FinalizarOut)
@@ -268,66 +317,175 @@ def consultar_resultado(
     _verificar_dono(tentativa, usuario)
     if tentativa.status != "FINALIZADO":
         raise HTTPException(status.HTTP_409_CONFLICT, "Esta tentativa ainda não foi finalizada.")
-    return FinalizarOut(
-        tentativa=TentativaOut.model_validate(tentativa),
-        respostas=[RespostaCorrigidaOut.model_validate(r) for r in tentativa.respostas],
-    )
+    return _resultado_com_gabarito(tentativa)
 
 
-@router.post("/{tentativa_id}/explicacoes", response_model=FinalizarOut)
+
+@router.post(
+    "/{tentativa_id}/explicacoes",
+    response_model=FinalizarOut,
+)
 def gerar_explicacoes(
     tentativa_id: int,
     db: Session = Depends(get_db),
     aluno=Depends(require_aluno),
 ):
-    """Contrato pronto para a IA: explica apenas respostas erradas após a correção.
+    tentativa = _obter_tentativa_ou_404(
+        db, tentativa_id
+    )
 
-    O provedor é injetável e a explicação é persistida em resposta.explicacao_ia.
-    Indisponibilidade da IA não altera notas ou respostas objetivas.
-    """
-    tentativa = _obter_tentativa_ou_404(db, tentativa_id)
     if tentativa.usuario_id != aluno.id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esta tentativa pertence a outro aluno.")
-    if tentativa.status != "FINALIZADO":
-        raise HTTPException(status.HTTP_409_CONFLICT, "Finalize a tentativa antes de pedir explicações.")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Esta tentativa pertence a outro aluno.",
+        )
 
-    pendentes = [r for r in tentativa.respostas if not r.correta and not r.explicacao_ia]
+    if tentativa.status != "FINALIZADO":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Finalize a tentativa antes de pedir explicações.",
+        )
+
+    pendentes = [
+        r for r in tentativa.respostas
+        if not r.correta and not r.explicacao_ia
+    ]
+
+    # A Meta só será inicializada se faltar uma explicação.
+    provedor = None
+
     if pendentes:
         try:
-            provedor = obter_provedor()
             for resposta in pendentes:
-                questao = db.get(Questao, resposta.questao_id)
+                questao = db.get(
+                    Questao,
+                    resposta.questao_id,
+                )
+
                 if questao is None:
-                    raise IAIndisponivel("A questão da resposta não está disponível.")
-                correta = next((alt for alt in questao.alternativas if alt.correta), None)
-                escolhida = db.get(Alternativa, resposta.alternativa_id)
-                if correta is None or escolhida is None:
-                    raise IAIndisponivel("As alternativas da questão não estão disponíveis.")
+                    raise IAIndisponivel(
+                        "A questão não está disponível."
+                    )
+
+                correta = next(
+                    (
+                        alt for alt in questao.alternativas
+                        if alt.correta
+                    ),
+                    None,
+                )
+
+                escolhida = db.get(
+                    Alternativa,
+                    resposta.alternativa_id,
+                )
+
+                if (
+                    correta is None
+                    or escolhida is None
+                    or escolhida.questao_id != questao.id
+                ):
+                    raise IAIndisponivel(
+                        "As alternativas não estão disponíveis."
+                    )
+
+                assinatura = assinatura_explicacao(
+                    questao,
+                    escolhida,
+                )
+
+                # Primeiro procura no Supabase.
+                existente = db.scalar(
+                    select(ExplicacaoCache).where(
+                        ExplicacaoCache.assinatura == assinatura
+                    )
+                )
+
+                if existente is not None:
+                    resposta.explicacao_ia = existente.texto
+                    db.commit()
+                    continue
+
+                # Só chega aqui se não encontrou no cache.
+                if provedor is None:
+                    provedor = obter_provedor()
+
                 contexto = ContextoExplicacao(
                     materia=questao.assunto.materia.nome,
                     assunto=questao.assunto.nome,
                     enunciado=questao.enunciado,
-                    alternativas=tuple(alt.texto for alt in questao.alternativas),
+                    alternativas=tuple(
+                        alt.texto
+                        for alt in sorted(
+                            questao.alternativas,
+                            key=lambda a: a.id,
+                        )
+                    ),
                     resposta_aluno=escolhida.texto,
                     resposta_correta=correta.texto,
                 )
+
                 explicacao = provedor.explicar(contexto)
+
                 if not explicacao or not explicacao.strip():
-                    raise IAIndisponivel("O provedor não retornou uma explicação válida.")
+                    raise IAIndisponivel(
+                        "O provedor não retornou uma explicação válida."
+                    )
+
+                db.add(
+                    ExplicacaoCache(
+                        questao_id=questao.id,
+                        alternativa_id=escolhida.id,
+                        assinatura=assinatura,
+                        modelo=modelo_atual(),
+                        texto=explicacao.strip(),
+                    )
+                )
+
                 resposta.explicacao_ia = explicacao.strip()
-            db.commit()
+
+                try:
+                    # Salva cache e resposta juntos.
+                    db.commit()
+
+                except IntegrityError:
+                    # Outra requisição já pode ter criado
+                    # o mesmo registro no banco.
+                    db.rollback()
+
+                    concorrente = db.scalar(
+                        select(ExplicacaoCache).where(
+                            ExplicacaoCache.assinatura == assinatura
+                        )
+                    )
+
+                    if concorrente is None:
+                        raise
+
+                    resposta_atual = db.get(
+                        Resposta,
+                        resposta.id,
+                    )
+
+                    resposta_atual.explicacao_ia = (
+                        concorrente.texto
+                    )
+
+                    db.commit()
+
         except IAIndisponivel as exc:
             db.rollback()
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
-        except Exception:
-            db.rollback()
-            # Falhas de provedores externos não revelam tokens ou detalhes internos.
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
-                "Não foi possível gerar explicações no momento. A correção continua disponível.",
+                str(exc),
+            ) from exc
+
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "Não foi possível obter explicações no momento. "
+                "A correção continua disponível.",
             ) from None
 
-    return FinalizarOut(
-        tentativa=TentativaOut.model_validate(tentativa),
-        respostas=[RespostaCorrigidaOut.model_validate(r) for r in tentativa.respostas],
-    )
+    return _resultado_com_gabarito(tentativa)

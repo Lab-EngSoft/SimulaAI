@@ -16,7 +16,42 @@ export type SimuladoDetalhe = Simulado & { questao_ids: number[]; total_tentativ
 export type IAStatus = { disponivel: boolean; descricao: string }
 export type Tentativa = { id: number; usuario_id: number; simulado_id: number; status: 'EM_ANDAMENTO' | 'FINALIZADO'; data_inicio: string; data_fim: string | null; acertos: number; erros: number; percentual_aproveitamento: number }
 export type QuestaoJogo = { id: number; enunciado: string; nivel_dificuldade: string | null; alternativas: { id: number; texto: string }[]; respondida_alternativa_id: number | null }
-export type Resultado = { tentativa: Tentativa; respostas: { questao_id: number; alternativa_id: number; correta: boolean; explicacao_ia: string | null }[] }
+
+export type Resultado = {
+  tentativa: Tentativa
+
+  respostas: {
+    questao_id: number
+    alternativa_id: number
+    correta: boolean
+    explicacao_ia: string | null
+  }[]
+
+  gabarito: {
+    questao_id: number
+    alternativa_correta_id: number
+  }[]
+}
+
+
+export type DesempenhoRotulo = {
+  rotulo: string
+  respondidas: number
+  acertos: number
+  erros: number
+  percentual: number
+}
+
+export type Dashboard = {
+  total_tentativas: number
+  tentativas_finalizadas: number
+  total_acertos: number
+  total_erros: number
+  media_aproveitamento: number
+  por_materia: DesempenhoRotulo[]
+  por_assunto: DesempenhoRotulo[]
+}
+
 
 export class ApiError extends Error {
   readonly status: number
@@ -53,6 +88,8 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
 }
 
 export const api = {
+
+  dashboard: () => request<Dashboard>('/dashboard'),
   login: (email: string, senha: string) => request<LoginResponse>('/auth/login', 'POST', { email, senha }),
   register: (nome: string, email: string, senha: string) => request<Usuario>('/auth/register', 'POST', { nome, email, senha }),
   me: () => request<Usuario>('/auth/me'),

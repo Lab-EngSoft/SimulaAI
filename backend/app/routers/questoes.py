@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.integridade import questao_usada_em_simulado, questao_com_tentativas
 from app.deps import require_admin
-from app.models import Alternativa, Assunto, Questao
+from app.models import Alternativa, Assunto, ExplicacaoCache, Questao
 from app.schemas import QuestaoIn, QuestaoOut, QuestaoUpdate
 
 router = APIRouter(prefix="/questoes", tags=["Questões"])
@@ -120,4 +120,7 @@ def remover_questao(
     if questao_usada_em_simulado(db, questao_id):
         raise HTTPException(status.HTTP_409_CONFLICT, "A questão faz parte de um simulado. Remova-a dos simulados antes de excluí-la.")
     db.delete(questao)
+    db.query(ExplicacaoCache).filter(
+        ExplicacaoCache.questao_id == questao.id
+    ).delete(synchronize_session=False)
     db.commit()
