@@ -99,3 +99,85 @@ def meu_dashboard(db: Session = Depends(get_db), aluno=Depends(require_aluno)):
         por_materia=_agregar_por_rotulo(db, aluno.id, Materia.nome),
         por_assunto=_agregar_por_rotulo(db, aluno.id, Assunto.nome),
     )
+
+
+@router.get("/evolucao", response_model=EvolucaoOut)
+def minha_evolucao(
+    db: Session = Depends(get_db),
+    aluno=Depends(require_aluno),
+):
+    """História #10: evolução do desempenho do aluno."""
+
+    finalizadas = (
+        db.query(Tentativa)
+        .filter(
+            Tentativa.usuario_id == aluno.id,
+            Tentativa.status == "FINALIZADO",
+        )
+        .order_by(
+            Tentativa.data_fim.asc(),
+            Tentativa.data_inicio.asc(),
+            Tentativa.id.asc(),
+        )
+        .all()
+    )
+
+    itens: list[EvolucaoItemOut] = []
+    anterior: float | None = None
+
+    for tentativa in finalizadas:
+        percentual = float(
+            tentativa.percentual_aproveitamento or 0
+        )
+
+        variacao = (
+            round(percentual - anterior, 2)
+            if anterior is not None
+            else None
+        )
+
+        itens.append(
+            EvolucaoItemOut(
+                tentativa_id=tentativa.id,
+                simulado_id=tentativa.simulado_id,
+                simulado_titulo=(
+                    tentativa.simulado.titulo
+                    if tentativa.simulado
+                    else ""
+                ),
+                data_fim=tentativa.data_fim,
+                acertos=tentativa.acertos or 0,
+                erros=tentativa.erros or 0,
+                percentual=round(percentual, 2),
+                variacao_vs_anterior=variacao,
+            )
+        )
+
+        anterior = percentual
+
+    if not itens:
+        return EvolucaoOut(
+            total_finalizadas=0,
+            itens=[],
+            variacao_total=None,
+            tendencia="sem_dados",
+        )
+
+    variacao_total = round(
+        itens[-1].percentual - itens[0].percentual,
+        2,
+    )
+
+    if variacao_total >= 2:
+        tendencia = "melhorando"
+    elif variacao_total <= -2:
+        tendencia = "piorando"
+    else:
+        tendencia = "estavel"
+
+    return EvolucaoOut(
+        total_finalizadas=len(itens),
+        itens=itens,
+        variacao_total=variacao_total,
+        tendencia=tendencia,
+    )
