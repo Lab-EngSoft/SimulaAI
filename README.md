@@ -2,11 +2,11 @@
 
 O SimulaAI é uma plataforma web de simulados para estudantes que se preparam para vestibulares, concursos, provas acadêmicas ou certificações. O sistema organiza questões por matéria e assunto, corrige tentativas, mostra o desempenho e gera explicações por IA para respostas incorretas.
 
-**Deploy:** ainda não publicado — previsto para a Sprint 4 (história #11)
+**Deploy:** guia completo em [`docs/deploy.md`](docs/deploy.md) — backend no Render + banco no Supabase + frontend na Vercel (história #11, Sprint 4). URLs de produção: *[preencher após executar o deploy]*
 **Repositório:** https://github.com/Lab-EngSoft/SimulaAI
 **Equipe:** Gabriel Reis de Souza (2840482421005) — Davi Sousa Cirilo (2840482421006) — Vinicius Brasileiro Veras (2840482421021) — Cesar Augusto Saraifa Fifolato (2840482421022) · Laboratório de Engenharia de Software · ADS Fatec Ribeirão Preto
 
-> **Estado atual (entrega E7):** backend FastAPI das Sprints 1–3 implementado e testado (**47 testes pytest, 100% aprovados**): autenticação com perfis Aluno/Administrador, CRUDs, fluxo do simulado, **histórico de tentativas** (#8), **dashboard de desempenho agregado** (#9) e **serviço de IA para explicações dos erros** (#7 — NVIDIA NIM, provedor injetável, com correção objetiva independente da IA). O frontend React está **integrado à API** na pasta `frontend/` e o CI (GitHub Actions) roda a suíte a cada push/PR. Deploy público previsto para a Sprint 4 (história #11).
+> **Estado atual (entrega E8):** backend FastAPI das Sprints 1–4 implementado e testado (**49 testes pytest, 100% aprovados**): autenticação com perfis, CRUDs, fluxo do simulado, histórico (#8), dashboard agregado (#9), **evolução entre tentativas** (#10) e serviço de IA para explicações (#7). Backend pronto para deploy (`Procfile`, `runtime.txt`, `/health`) — roteiro em `docs/deploy.md`. CI (GitHub Actions) roda a suíte a cada push/PR.
 
 ## Stack
 
@@ -122,6 +122,8 @@ Acesse `http://localhost:5173` — o frontend usa `VITE_API_URL` (padrão `http:
 - [Sprint 1 — relatório](relatorios/sprint-1-relatorio.md) · [evidências](relatorios/sprint-1-evidencias-teste.md) · [retrospectiva](relatorios/sprint-1-retrospectiva.md)
 - [Sprint 2 — relatório](relatorios/sprint-2-relatorio.md) · [evidências](relatorios/sprint-2-evidencias-teste.md) · [retrospectiva](relatorios/sprint-2-retrospectiva.md)
 - [Sprint 3 — relatório](relatorios/sprint-3-relatório.md) · [evidências](relatorios/sprint-3-evidencias-teste.md) · [retrospectiva](relatorios/sprint-3-retrospectiva.md)
+- [Sprint 4 — relatório](relatorios/sprint-4-relatorio.md) · [evidências](relatorios/sprint-4-evidencias-teste.md) · [retrospectiva](relatorios/sprint-4-retrospectiva.md)
+- [Guia de deploy em produção](docs/deploy.md)
 
 ## Convenções da equipe
 
@@ -140,7 +142,18 @@ python -m pip install -r requirements.txt   # na primeira vez
 python -m pytest
 ```
 
-Estado atual: **47 testes, 100% aprovados** (execução local de 16/10/2026). O CI (GitHub Actions, `.github/workflows/tests.yml`) executa a suíte automaticamente a cada push/PR para a main — sempre sem `NVIDIA_API_KEY`, provando que a correção objetiva funciona sem a IA. O comando oficial deve ser executado antes de abrir uma PR.
+Estado atual: **49 testes, 100% aprovados** (execução local de 17/10/2026). O CI (GitHub Actions, `.github/workflows/tests.yml`) executa a suíte automaticamente a cada push/PR para a main — sempre sem `NVIDIA_API_KEY`, provando que a correção objetiva funciona sem a IA. O comando oficial deve ser executado antes de abrir uma PR.
+
+## Deploy em produção (Sprint 4 — história #11)
+
+O backend já está pronto para publicar: `backend/Procfile` (start command),
+`backend/runtime.txt` (Python 3.12.5) e endpoint `/health` para monitoramento.
+
+O roteiro completo — Supabase (banco) → Render (API) → Vercel (frontend) →
+CORS → registro das URLs — está em **[docs/deploy.md](docs/deploy.md)**.
+As variáveis de ambiente de produção (`DATABASE_URL`, `SECRET_KEY`,
+`NVIDIA_API_KEY`, `CORS_ORIGINS`, `APP_ENV=production`) são configuradas na
+própria plataforma e **nunca** no repositório.
 
 ## Licença / Uso acadêmico
 

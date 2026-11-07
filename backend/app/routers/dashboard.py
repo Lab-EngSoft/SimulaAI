@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import require_aluno
 from app.models import Assunto, Materia, Questao, Resposta, Tentativa
-from app.schemas import DashboardOut, DesempenhoRotuloOut
+from app.schemas import DashboardOut, DesempenhoRotuloOut, EvolucaoItemOut, EvolucaoOut
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard do aluno"])
 
@@ -93,4 +93,61 @@ def meu_dashboard(db: Session = Depends(get_db), aluno=Depends(require_aluno)):
         media_aproveitamento=round(media, 2),
         por_materia=_agregar_por_rotulo(db, aluno.id, Materia.nome),
         por_assunto=_agregar_por_rotulo(db, aluno.id, Assunto.nome),
+    )
+
+
+@router.get("/evolucao", response_model=EvolucaoOut)
+def minha_evolucao(db: Session = Depends(get_db), aluno=Depends(require_aluno)):
+    """História #10: linha do tempo do desempenho do aluno autenticado.
+
+    Critérios de aceite:
+    - utiliza os dados do histórico de tentativas já persistidos;
+    - permite comparar o desempenho entre diferentes simulados (cada item
+      traz o simulado e o percentual daquela tentativa);
+    - a evolução é calculada a partir dos resultados registrados pelo sistema
+      (variação em pontos percentuais entre tentativas finalizadas, em ordem
+      cronológica).
+    """
+    finalizadas = (
+        db.query(Tentativa)
+        .filter(Tentativa.usuario_id == aluno.id, Tentativa.status == "FINALIZADO")
+        .order_by(Tentativa.data_fim.asc(), Tentativa.data_inicio.asc(), Tentativa.id.asc())
+        .all()
+    )
+
+    itens: list[EvolucaoItemOut] = []
+    anterior: float | None = None
+    for t in finalizadas:
+        percentual = float(t.percentual_aproveitamento or 0)
+        variacao = round(percentual - anterior, 2) if anterior is not None else None
+        itens.append(
+            EvolucaoItemOut(
+                tentativa_id=t.id,
+                simulado_id=t.simulado_id,
+                simulado_titulo=t.simulado.titulo if t.simulado else "",
+                data_fim=t.data_fim,
+                acertos=t.acertos or 0,
+                erros=t.erros or 0,
+                percentual=round(percentual, 2),
+                variacao_vs_anterior=variacao,
+            )
+        )
+        anterior = percentual
+
+    if not itens:
+        return EvolucaoOut(total_finalizadas=0, itens=[], variacao_total=None, tendencia="sem_dados")
+
+    variacao_total = round(itens[-1].percentual - itens[0].percentual, 2)
+    if variacao_total >= 2:
+        tendencia = "melhorando"
+    elif variacao_total <= -2:
+        tendencia = "piorando"
+    else:
+        tendencia = "estavel"
+
+    return EvolucaoOut(
+        total_finalizadas=len(itens),
+        itens=itens,
+        variacao_total=variacao_total,
+        tendencia=tendencia,
     )
