@@ -235,3 +235,25 @@ class DashboardOut(BaseModel):
     media_aproveitamento: float
     por_materia: list[DesempenhoRotuloOut] = []
     por_assunto: list[DesempenhoRotuloOut] = []
+
+
+# ---------- Evolução entre tentativas (história #10) ----------
+
+class EvolucaoItemOut(BaseModel):
+    """Um ponto da linha do tempo do aluno."""
+
+    tentativa_id: int
+    simulado_id: int
+    simulado_titulo: str
+    data_fim: datetime
+    acertos: int
+    erros: int
+    percentual: float
+    variacao_vs_anterior: float | None = None
+
+
+class EvolucaoOut(BaseModel):
+    total_finalizadas: int
+    itens: list[EvolucaoItemOut] = []
+    variacao_total: float | None = None
+    tendencia: str
