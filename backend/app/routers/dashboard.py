@@ -21,7 +21,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import require_aluno
 from app.models import Assunto, Materia, Questao, Resposta, Tentativa
-from app.schemas import DashboardOut, DesempenhoRotuloOut
+from app.schemas import (
+    DashboardOut,
+    DesempenhoRotuloOut,
+    EvolucaoItemOut,
+    EvolucaoOut,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard do aluno"])
 
