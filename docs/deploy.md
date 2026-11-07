@@ -1,5 +1,19 @@
 # Deploy em produção — SimulaAI (Sprint 4 / E8, história #11)
 
+## Checklist rápido (~15 min, pode ser feito por qualquer membro do grupo)
+
+- [ ] **Supabase:** criar projeto → copiar a Connection String (URI) → rodar `database/schema.sql` no SQL Editor
+- [ ] **Render:** New Web Service no repo `Lab-EngSoft/SimulaAI` → Root Directory `backend` → Build `pip install -r requirements.txt` → Start deixa o `Procfile` → variáveis `APP_ENV=production`, `DATABASE_URL` (Supabase), `SECRET_KEY` (gerar), `CORS_ORIGINS=http://localhost:5173`, `NVIDIA_API_KEY` (opcional) → Create
+- [ ] Testar `https://<url-render>/health` → `{"status":"ok"}`
+- [ ] **Vercel:** importar o mesmo repo → Root Directory `frontend` → env `VITE_API_URL=https://<url-render>` → Deploy
+- [ ] No Render, atualizar `CORS_ORIGINS` com a URL da Vercel → Save (redeploy automático)
+- [ ] Colocar as duas URLs no `README.md` (linha de Deploy) e tirar prints do sistema no ar (serve pro E10)
+
+> Validação local já feita: o backend sobe em modo produção com o comando do
+> `Procfile` e responde `/health` (smoke test de 17/10/2026).
+
+---
+
 Este guia coloca o SimulaAI **no ar por URL pública**, cumprindo o requisito
 mínimo do Manual §3 "Deploy público por URL".
 
