@@ -203,10 +203,6 @@ class FinalizarOut(BaseModel):
     gabarito: list[GabaritoQuestaoOut]
 
 
-class FinalizarOut(BaseModel):
-    tentativa: TentativaOut
-    respostas: list[RespostaCorrigidaOut]
-
 
 # ---------- IA (história #7 — status para o frontend) ----------
 
