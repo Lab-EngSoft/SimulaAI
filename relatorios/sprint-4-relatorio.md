@@ -1,6 +1,6 @@
 # Relatório de Entrega — Sprint 4 — SimulaAI
 
-**Período:** 17/10/2026 a 30/10/2026
+**Período:** 23/10/2026 a 06/11/2026
 **Sprint Review:** [confirmar com o grupo]
 
 ## 1. Planejado vs. entregue
