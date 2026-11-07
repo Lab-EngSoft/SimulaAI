@@ -28,8 +28,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title="SimulaAI API",
-    version="0.3.0",
-    description="Backend do SimulaAI — Laboratório de Engenharia de Software (Sprint 3).",
+    version="0.4.0",
+    description="Backend do SimulaAI — Laboratório de Engenharia de Software (Sprint 4).",
     lifespan=lifespan,
 )
 
@@ -57,4 +57,10 @@ app.include_router(dashboard.router)
 
 @app.get("/", tags=["Raiz"])
 def raiz():
-    return {"sistema": "SimulaAI", "documentacao": "/docs", "versao": "0.3.0"}
+    return {"sistema": "SimulaAI", "documentacao": "/docs", "versao": "0.4.0"}
+
+
+@app.get("/health", tags=["Raiz"])
+def health():
+    """Health check para a plataforma de deploy (Render/Heroku) monitorar o serviço."""
+    return {"status": "ok"}
