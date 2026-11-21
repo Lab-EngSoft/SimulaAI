@@ -29,7 +29,7 @@ Aprendemos que entregas ágeis exigem responsabilidades claras, comunicação fr
 
 ## Imagens enviadas
 
-- [ ] capa.png (1280×720)
-- [ ] tela-1.png (1920×1080) — gerenciamento de questões pelo Administrador
-- [ ] tela-2.png (1920×1080) — resultado de simulado e explicação por IA
-- [ ] tela-3.png (1920×1080) — painel de desempenho do Aluno
+- [ ] imagem de apresentação.jpeg
+- [ ] banco_questões_admin.jpeg — gerenciamento de questões pelo Administrador
+- [ ] Exemplo_explicações_aluno.jpeg — resultado de simulado e explicação por IA
+- [ ] dashboard_aprendizagem.jpeg — painel de desempenho do Aluno
